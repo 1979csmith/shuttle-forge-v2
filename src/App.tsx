@@ -67,6 +67,17 @@ function enumerateDays(startISO: string, endISO: string): string[] {
   return days;
 }
 
+// --- Risk helpers ---
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+function diffDays(aISO: string, bISO: string) {
+  const a = new Date(aISO).setHours(0,0,0,0);
+  const b = new Date(bISO).setHours(0,0,0,0);
+  return Math.round((a - b) / MS_PER_DAY);
+}
+
 function pickStatus(i: number): Job["status"] {
   const arr: Job["status"][] = ["Pending", "Accepted", "In Progress", "Accepted"]; // skew green
   return arr[i % arr.length];
@@ -159,6 +170,52 @@ export default function ShuttleForge() {
 
   // Filter rows by DELIVERY window
   const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO]);
+
+  // Risk level per car (no driver logic; purely date/assignment‑based)
+  // Levels: 'red' (critical), 'orange' (caution), 'green' (good)
+  type RiskInfo = { level: 'red' | 'orange' | 'green'; label: string };
+  function riskFor(r: CarRow): RiskInfo {
+    const today = isoToday();
+    const dToTakeout = diffDays(r.job.takeOut, today); // 0 = take‑out is today
+    const d1 = addDaysISO(r.job.takeOut, -1);
+    const delivered = r.deliveryISO < today; // delivered earlier than today
+
+    if (delivered) return { level: 'green', label: 'Delivered' };
+
+    if (dToTakeout <= 0) {
+      // Trip ends today or already ended and car not delivered yet
+      return { level: 'red', label: dToTakeout === 0 ? 'Trip ends today' : 'Trip ended' };
+    }
+
+    if (r.deliveryISO === d1) {
+      // Scheduled on D‑1
+      return dToTakeout === 1
+        ? { level: 'orange', label: 'Deliver today (D‑1)' }
+        : { level: 'green', label: 'On time (D‑1)' };
+    }
+
+    if (r.deliveryISO < d1) {
+      // Pulled forward to an earlier day than D‑1
+      const daysEarly = diffDays(d1, r.deliveryISO);
+      return { level: 'green', label: `Pulled forward (D‑${daysEarly})` };
+    }
+
+    // Fallback (shouldn't happen with our scheduler)
+    return { level: 'orange', label: 'Needs scheduling' };
+  }
+
+  // Enrich rows with risk and sort most‑critical first
+  const rowsEnriched = useMemo(() => {
+    return rowsInRange
+      .map((r) => ({ ...r, risk: riskFor(r) }))
+      .sort((a, b) => {
+        const order = { red: 0, orange: 1, green: 2 } as const;
+        if (order[a.risk.level] !== order[b.risk.level]) return order[a.risk.level] - order[b.risk.level];
+        // then sooner take‑out first, then customer
+        if (a.job.takeOut !== b.job.takeOut) return a.job.takeOut.localeCompare(b.job.takeOut);
+        return a.job.customer.localeCompare(b.job.customer);
+      });
+  }, [rowsInRange]);
 
   // Metrics
   const metrics = useMemo(() => ({
@@ -280,38 +337,41 @@ export default function ShuttleForge() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-slate-700">
                   <tr>
-                    <Th>Job</Th>
                     <Th>Customer</Th>
                     <Th>Put-in</Th>
                     <Th>Take-out</Th>
-                    <Th>Cars</Th>
+                    <Th>Delivery</Th>
+                    <Th>Car</Th>
                     <Th>Status</Th>
+                    <Th>Risk</Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleJobs.length === 0 && (
+                  {rowsEnriched.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-10 text-slate-500">No jobs in range.</td>
+                      <td colSpan={7} className="text-center py-10 text-slate-500">No deliveries in range.</td>
                     </tr>
                   )}
-                  {visibleJobs.map((j) => (
-                    <tr key={j.id} className="border-t">
-                      <Td>{j.id}</Td>
-                      <Td>{j.customer}</Td>
-                      <Td>{fmt(j.putIn)}</Td>
-                      <Td>{fmt(j.takeOut)}</Td>
-                      <Td>{j.cars}</Td>
-                      <Td>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          j.status === "Pending"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : j.status === "Accepted"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : j.status === "In Progress"
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "bg-slate-50 text-slate-700 border border-slate-200"
-                        }`}>{j.status}</span>
-                      </Td>
+                  {rowsEnriched.map((r) => (
+                    <tr
+                      key={`${r.job.id}-${r.carIndex}`}
+                      className={`border-t ${
+                        r.risk.level === 'red' ? 'bg-red-50/40' : r.risk.level === 'orange' ? 'bg-orange-50/40' : ''
+                      }`}
+                    >
+                      <td className="px-3 py-1">{r.job.customer}</td>
+                      <td className="px-3 py-1">{fmt(r.job.putIn)}</td>
+                      <td className="px-3 py-1">{fmt(r.job.takeOut)}</td>
+                      <td className="px-3 py-1">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</td>
+                      <td className="px-3 py-1">Car {r.carIndex + 1}</td>
+                      <td className="px-3 py-1">
+                        <span className={`px-2 py-1 rounded-full text-xs border ${
+                          r.job.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          r.job.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          r.job.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-slate-50 text-slate-700 border-slate-200'}`}>{r.job.status}</span>
+                      </td>
+                      <td className="px-3 py-1"><RiskBadge level={r.risk.level} label={r.risk.label} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -338,26 +398,43 @@ export default function ShuttleForge() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-semibold mb-2">Date Range</h4>
-              <p className="text-sm text-slate-600">Showing jobs with put-in between <b>{fmt(startISO)}</b> and <b>{fmt(endISO)}</b>.</p>
+              <p className="text-sm text-slate-600">Showing deliveries between <b>{fmt(startISO)}</b> and <b>{fmt(endISO)}</b>.</p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <h4 className="font-semibold mb-1">At‑Risk Vehicles</h4>
-              <p className="text-xs text-amber-800 mb-2">These were forced onto the day‑before because earlier days were full.</p>
-              {atRiskRows.length === 0 ? (
-                <div className="text-xs text-amber-700">No at‑risk items.</div>
-              ) : (
-                <ul className="text-sm list-disc pl-4 space-y-1">
-                  {atRiskRows.slice(0, 6).map((r) => (
-                    <li key={`${r.job.id}-${r.carIndex}`}>
-                      {r.job.customer} • Car {r.carIndex + 1} • Delivery {fmt(r.deliveryISO)} (Take‑out {fmt(r.job.takeOut)})
-                    </li>
-                  ))}
-                  {atRiskRows.length > 6 && (
-                    <li className="text-xs text-amber-700">+ {atRiskRows.length - 6} more…</li>
-                  )}
-                </ul>
-              )}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <h4 className="font-semibold mb-2">Escalating Alerts</h4>
+              {(() => {
+                const today = isoToday();
+                const d1List = rowsEnriched.filter(r => r.risk.label.startsWith('Deliver today'));
+                const dueToday = rowsEnriched.filter(r => r.risk.label.includes('Trip ends today'));
+                const overdue = rowsEnriched.filter(r => r.risk.label.includes('Trip ended'));
+
+                return (
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <div className="font-semibold">🔴 Critical</div>
+                      {overdue.length === 0 && dueToday.length === 0 ? (
+                        <div className="text-slate-500 text-xs">No critical items.</div>
+                      ) : (
+                        <ul className="list-disc pl-4">
+                          {overdue.map(r => (<li key={`o-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
+                          {dueToday.map(r => (<li key={`t-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
+                        </ul>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-semibold">🟠 Today (D‑1)</div>
+                      {d1List.length === 0 ? (
+                        <div className="text-slate-500 text-xs">No D‑1 deliveries pending.</div>
+                      ) : (
+                        <ul className="list-disc pl-4">
+                          {d1List.map(r => (<li key={`d1-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Delivery {fmt(r.deliveryISO)}</li>))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
@@ -487,6 +564,15 @@ function RangeButton({ label, active, onClick }: { label: string; active: boolea
   return (
     <button onClick={onClick} className={`text-sm rounded-xl px-3 py-2 border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white border-slate-300 hover:border-slate-400"}`}>{label}</button>
   );
+}
+
+function RiskBadge({ level, label }: { level: 'red' | 'orange' | 'green'; label: string }) {
+  const cls = level === 'red'
+    ? 'bg-red-50 text-red-700 border-red-200'
+    : level === 'orange'
+    ? 'bg-orange-50 text-orange-700 border-orange-200'
+    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  return <span className={`px-2 py-1 rounded-full text-xs border ${cls}`}>{label}</span>;
 }
 
 function Th({ children }: { children: React.ReactNode }) {

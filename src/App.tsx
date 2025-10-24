@@ -340,6 +340,51 @@ export default function ShuttleForge() {
               <h4 className="font-semibold mb-2">Date Range</h4>
               <p className="text-sm text-slate-600">Showing jobs with put-in between <b>{fmt(startISO)}</b> and <b>{fmt(endISO)}</b>.</p>
             </div>
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <h4 className="font-semibold mb-1">At‑Risk Vehicles</h4>
+              <p className="text-xs text-amber-800 mb-2">These were forced onto the day‑before because earlier days were full.</p>
+              {atRiskRows.length === 0 ? (
+                <div className="text-xs text-amber-700">No at‑risk items.</div>
+              ) : (
+                <ul className="text-sm list-disc pl-4 space-y-1">
+                  {atRiskRows.slice(0, 6).map((r) => (
+                    <li key={`${r.job.id}-${r.carIndex}`}>
+                      {r.job.customer} • Car {r.carIndex + 1} • Delivery {fmt(r.deliveryISO)} (Take‑out {fmt(r.job.takeOut)})
+                    </li>
+                  ))}
+                  {atRiskRows.length > 6 && (
+                    <li className="text-xs text-amber-700">+ {atRiskRows.length - 6} more…</li>
+                  )}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+              <h4 className="font-semibold mb-1">Reconciliation</h4>
+              <p className="text-xs text-rose-800 mb-2">Every car must have a scheduled delivery. Any mismatch shows here.</p>
+              {reconciliationIssues.length === 0 ? (
+                <div className="text-xs text-rose-700">All jobs reconcile ✅</div>
+              ) : (
+                <ul className="text-sm list-disc pl-4 space-y-1">
+                  {reconciliationIssues.map((x) => (
+                    <li key={x.job.id}>{x.job.customer}: scheduled {x.scheduled}/{x.expected} cars</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <h4 className="font-semibold mb-2">30‑Day Delivery Utilization</h4>
+              <div className="grid grid-cols-10 gap-2 text-center">
+                {util30.map((d) => (
+                  <div key={d.iso} className={`rounded-lg p-2 border ${d.used > 7 ? "border-amber-400 bg-amber-50" : d.used === 7 ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+                    <div className="text-xs">{fmt(d.iso)}</div>
+                    <div className="text-sm font-semibold">{d.used}/7</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

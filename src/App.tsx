@@ -5,16 +5,45 @@ import React, { useMemo, useState } from "react";
 // Goals: show the core flow (route -> overview -> jobs list -> capacity math)
 // You can drop this into any Next.js/React project or run in CodeSandbox.
 
-// ---------- Types ----------
+// ---- Types ----
 type Job = {
   id: string;
-  route: string; // e.g., "Main Salmon", "Middle Fork"
+  route: string;
   putIn: string; // ISO date
   takeOut: string; // ISO date
-  cars: number;
+  cars: number; // number of vehicles
   customer: string;
   status: "Pending" | "Accepted" | "In Progress" | "Completed";
 };
+
+const ROUTES = ["Main Salmon", "Middle Fork"] as const;
+const CUSTOMERS = [
+  "Johnson Party",
+  "Wilson Crew",
+  "Hernandez Group",
+  "Green Family",
+  "Nguyen Team",
+  "Bennett Boats",
+  "Ramirez Outfit",
+  "Clark & Co.",
+];
+
+function isoDaysFromNow(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDaysISO(iso: string, days: number) {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function fmt(iso: string) {
+  const dt = new Date(iso);
+  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 // ---------- Seed Data ----------
 const seedJobs: Job[] = [
@@ -57,19 +86,6 @@ const seedJobs: Job[] = [
 ];
 
 // ---------- Helpers ----------
-function fmt(d: string) {
-  const dt = new Date(d);
-  return dt.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function daysFromNow(n: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 function withinRange(job: Job, startISO: string, endISO: string) {
   return job.putIn >= startISO && job.putIn < endISO;
@@ -89,7 +105,7 @@ export default function ShuttleForgeMVP() {
   const startISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const endISO = useMemo(() => {
     const map: Record<typeof range, number> = { "3d": 3, "7d": 7, "30d": 30 } as const;
-    return daysFromNow(map[range]);
+    return isoDaysFromNow(map[range]);
   }, [range]);
 
   const routes = useMemo(() => {
@@ -116,7 +132,7 @@ export default function ShuttleForgeMVP() {
     id: "",
     route: selectedRoute || "Main Salmon",
     putIn: startISO,
-    takeOut: daysFromNow(3),
+    takeOut: isoDaysFromNow(3),
     cars: 1,
     customer: "",
     status: "Pending",
@@ -132,7 +148,7 @@ export default function ShuttleForgeMVP() {
       id: "",
       route: selectedRoute || "Main Salmon",
       putIn: startISO,
-      takeOut: daysFromNow(3),
+      takeOut: isoDaysFromNow(3),
       cars: 1,
       customer: "",
       status: "Pending",

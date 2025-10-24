@@ -440,14 +440,7 @@ export default function ShuttleForge() {
 // ---------- Small UI bits ----------
 function RangeButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={`text-sm rounded-xl px-3 py-2 border transition ${
-        active ? "bg-blue-600 text-white border-blue-600" : "bg-white border-slate-300 hover:border-slate-400"
-      }`}
-    >
-      {label}
-    </button>
+    <button onClick={onClick} className={`text-sm rounded-xl px-3 py-2 border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white border-slate-300 hover:border-slate-400"}`}>{label}</button>
   );
 }
 

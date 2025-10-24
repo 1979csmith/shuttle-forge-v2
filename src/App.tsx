@@ -71,7 +71,6 @@ function buildDemoJobs(days = 10): Job[] {
 }
 
 // ---------- Seed Data ----------
-const seedJobs: Job[] = buildDemoJobs(10);
 
 // ---------- Helpers ----------
 
@@ -85,15 +84,18 @@ function vanDriversNeeded(totalCars: number) {
 }
 
 // ---------- UI ----------
-export default function ShuttleForgeMVP() {
-  const [jobs, setJobs] = useState<Job[]>(seedJobs);
+export default function ShuttleForge() {
+  const demoSeed = useMemo(() => buildDemoJobs(14), []);
+  const [jobs] = useState<Job[]>(demoSeed);
   const [selectedRoute, setSelectedRoute] = useState<string | null>("Main Salmon");
   const [range, setRange] = useState<"3d" | "7d" | "30d">("7d");
 
   const startISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const endISO = useMemo(() => {
     const map: Record<typeof range, number> = { "3d": 3, "7d": 7, "30d": 30 } as const;
-    return isoDaysFromNow(map[range]);
+    const d = new Date();
+    d.setDate(d.getDate() + map[range]);
+    return d.toISOString().slice(0, 10);
   }, [range]);
 
   const routes = useMemo(() => {
@@ -101,10 +103,8 @@ export default function ShuttleForgeMVP() {
     return Array.from(set);
   }, [jobs]);
 
-  const visibleJobs = useMemo(() => {
-    const filtered = jobs.filter((j) => withinRange(j, startISO, endISO));
-    return selectedRoute ? filtered.filter((j) => j.route === selectedRoute) : filtered;
-  }, [jobs, startISO, endISO, selectedRoute]);
+  // Route filter only; date filtering happens on DELIVERY dates after scheduling
+  const visibleJobs = useMemo(() => (selectedRoute ? jobs.filter(j => j.route === selectedRoute) : jobs), [jobs, selectedRoute]);
 
   const metrics = useMemo(() => {
     const totalCars = visibleJobs.reduce((sum, j) => sum + j.cars, 0);

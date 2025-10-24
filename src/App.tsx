@@ -150,7 +150,7 @@ export default function ShuttleForgeMVP() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">ShuttleForge — Dispatch</h1>
-            <p className="text-sm text-slate-600">Ultra-lean MVP • Local data only • Ready to demo</p>
+            <p className="text-sm text-slate-600">Ultra-lean MVP • Local data only • Ready to demo • v2.0</p>
           </div>
           <div className="flex items-center gap-2">
             <RangeButton label="Next 3 days" active={range === "3d"} onClick={() => setRange("3d")} />

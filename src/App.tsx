@@ -16,6 +16,14 @@ type Job = {
   status: "Pending" | "Accepted" | "In Progress" | "Completed";
 };
 
+type CarRow = {
+  job: Job;
+  carIndex: number;
+  deliveryISO: string;
+  pulledForward: boolean;
+  overflow: boolean;
+};
+
 const ROUTES = ["Main Salmon", "Middle Fork"] as const;
 const CUSTOMERS = [
   "Johnson Party",
@@ -43,6 +51,20 @@ function addDaysISO(iso: string, days: number) {
 function fmt(iso: string) {
   const dt = new Date(iso);
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function enumerateDays(startISO: string, endISO: string): string[] {
+  const days: string[] = [];
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  const current = new Date(start);
+  
+  while (current <= end) {
+    days.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return days;
 }
 
 function pickStatus(i: number): Job["status"] {
@@ -106,13 +128,68 @@ export default function ShuttleForge() {
   // Route filter only; date filtering happens on DELIVERY dates after scheduling
   const visibleJobs = useMemo(() => (selectedRoute ? jobs.filter(j => j.route === selectedRoute) : jobs), [jobs, selectedRoute]);
 
-  const metrics = useMemo(() => {
-    const totalCars = visibleJobs.reduce((sum, j) => sum + j.cars, 0);
-    const driverCapacity = { available: 6, max: 8 }; // demo values
-    const neededVanDrivers = vanDriversNeeded(totalCars);
-    const overbooked = totalCars > driverCapacity.available; // simple demo rule
-    return { totalCars, driverCapacity, neededVanDrivers, overbooked };
+  // Each car becomes a scheduled delivery row
+  // Prefer earliest available day within [putIn+1 .. takeOut-1]; cap 7/day, overflow to D-1 if needed
+  const scheduledRows: CarRow[] = useMemo(() => {
+    const rows: CarRow[] = [];
+    const usage: Record<string, number> = {}; // shuttle drivers used per day
+    const jobsSorted = [...visibleJobs].sort((a,b) => a.takeOut === b.takeOut ? a.putIn.localeCompare(b.putIn) : a.takeOut.localeCompare(b.takeOut));
+
+    for (const job of jobsSorted) {
+      const start = addDaysISO(job.putIn, 1);
+      const end = addDaysISO(job.takeOut, -1);
+      const eligible = enumerateDays(start, end);
+      for (let ci = 0; ci < job.cars; ci++) {
+        let assigned: string | null = null;
+        for (const day of eligible) {
+          const used = usage[day] || 0;
+          if (used < 7) { usage[day] = used + 1; assigned = day; break; }
+        }
+        if (!assigned) {
+          const d1 = addDaysISO(job.takeOut, -1);
+          usage[d1] = (usage[d1] || 0) + 1;
+          rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true });
+        } else {
+          rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false });
+        }
+      }
+    }
+    return rows;
   }, [visibleJobs]);
+
+  // Filter rows by DELIVERY window
+  const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO]);
+
+  // Metrics
+  const metrics = useMemo(() => ({
+    totalDeliveries: rowsInRange.length,
+    driverCapacity: { available: 7, max: 7 },
+    neededVanDrivers: rowsInRange.length > 0 ? 1 : 0,
+  }), [rowsInRange]);
+
+  // Integrity checks
+  const jobToScheduledCount = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of scheduledRows) map[r.job.id] = (map[r.job.id] || 0) + 1;
+    return map;
+  }, [scheduledRows]);
+
+  const reconciliationIssues = useMemo(() => {
+    const issues: { job: Job; expected: number; scheduled: number }[] = [];
+    for (const j of visibleJobs) { const s = jobToScheduledCount[j.id] || 0; if (s !== j.cars) issues.push({ job: j, expected: j.cars, scheduled: s }); }
+    return issues;
+  }, [visibleJobs, jobToScheduledCount]);
+
+  const atRiskRows = useMemo(() => scheduledRows.filter(r => r.overflow), [scheduledRows]);
+
+  const util30 = useMemo(() => {
+    const days: { iso: string; used: number }[] = [];
+    const start = new Date(startISO); const end = new Date(startISO); end.setDate(end.getDate() + 29);
+    const usage: Record<string, number> = {};
+    for (const r of scheduledRows) usage[r.deliveryISO] = (usage[r.deliveryISO] || 0) + 1;
+    const d = new Date(start); while (d <= end) { const iso = d.toISOString().slice(0,10); days.push({ iso, used: usage[iso] || 0 }); d.setDate(d.getDate()+1); }
+    return days;
+  }, [scheduledRows, startISO]);
 
   // ---- Add Job (simple inline form) ----
   const [open, setOpen] = useState(false);

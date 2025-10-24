@@ -45,45 +45,33 @@ function fmt(iso: string) {
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function pickStatus(i: number): Job["status"] {
+  const arr: Job["status"][] = ["Pending", "Accepted", "In Progress", "Accepted"]; // skew green
+  return arr[i % arr.length];
+}
+
+function buildDemoJobs(days = 10): Job[] {
+  const jobs: Job[] = [];
+  let idCounter = 1000;
+  for (let d = 0; d < days; d++) {
+    const putIn = isoDaysFromNow(d);
+    for (const route of ROUTES) {
+      const perDay = 3 + ((d + route.length) % 3); // 3–5 jobs
+      for (let k = 0; k < perDay; k++) {
+        const id = `J-${++idCounter}`;
+        const cars = 1 + ((idCounter + k) % 5); // 1–5 cars
+        const customer = CUSTOMERS[(idCounter + k) % CUSTOMERS.length];
+        const status = pickStatus(idCounter + k);
+        const duration = 5 + ((idCounter + k) % 3); // 5–7 days
+        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), cars, customer, status });
+      }
+    }
+  }
+  return jobs;
+}
+
 // ---------- Seed Data ----------
-const seedJobs: Job[] = [
-  {
-    id: "J-1001",
-    route: "Main Salmon",
-    putIn: "2025-11-01",
-    takeOut: "2025-11-04",
-    cars: 3,
-    customer: "Johnson Party",
-    status: "Accepted",
-  },
-  {
-    id: "J-1002",
-    route: "Main Salmon",
-    putIn: "2025-11-02",
-    takeOut: "2025-11-05",
-    cars: 2,
-    customer: "Wilson Crew",
-    status: "Pending",
-  },
-  {
-    id: "J-1003",
-    route: "Middle Fork",
-    putIn: "2025-11-03",
-    takeOut: "2025-11-06",
-    cars: 5,
-    customer: "Hernandez Group",
-    status: "Accepted",
-  },
-  {
-    id: "J-1004",
-    route: "Middle Fork",
-    putIn: "2025-11-10",
-    takeOut: "2025-11-13",
-    cars: 1,
-    customer: "Green Family",
-    status: "Pending",
-  },
-];
+const seedJobs: Job[] = buildDemoJobs(10);
 
 // ---------- Helpers ----------
 

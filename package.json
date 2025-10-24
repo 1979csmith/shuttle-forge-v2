@@ -1,0 +1,14 @@
+{
+  "name": "shuttle-forge",
+  "version": "1.0.0",
+  "description": "Shuttle Forge Operations Dashboard",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build needed - static site'",
+    "deploy": "echo 'Ready for deployment'"
+  },
+  "keywords": ["shuttle", "operations", "dashboard"],
+  "author": "Chris",
+  "license": "MIT"
+}

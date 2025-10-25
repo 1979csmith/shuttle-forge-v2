@@ -6,6 +6,15 @@ import React, { useMemo, useState } from "react";
 // You can drop this into any Next.js/React project or run in CodeSandbox.
 
 // ---- Types ----
+type Vehicle = {
+  make: string;
+  model: string;
+  year: number;
+  licensePlate: string;
+  color: string;
+  owner: string;
+};
+
 type Job = {
   id: string;
   route: string;
@@ -14,6 +23,7 @@ type Job = {
   cars: number; // number of vehicles
   customer: string;
   status: "Pending" | "Accepted" | "In Progress" | "Completed";
+  vehicles: Vehicle[];
 };
 
 type CarRow = {
@@ -27,7 +37,7 @@ type CarRow = {
 const ROUTES = ["Main Salmon", "Middle Fork"] as const;
 const CUSTOMERS = [
   "Johnson Party",
-  "Wilson Crew",
+  "Wilson Crew", 
   "Hernandez Group",
   "Green Family",
   "Nguyen Team",
@@ -35,6 +45,11 @@ const CUSTOMERS = [
   "Ramirez Outfit",
   "Clark & Co.",
 ];
+
+const VEHICLE_MAKES = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi"];
+const VEHICLE_MODELS = ["Camry", "F-150", "Civic", "Silverado", "Altima", "X3", "C-Class", "A4"];
+const VEHICLE_COLORS = ["White", "Black", "Silver", "Blue", "Red", "Gray", "Green", "Gold"];
+const OWNERS = ["John Smith", "Sarah Johnson", "Mike Wilson", "Lisa Brown", "David Lee", "Amy Davis", "Chris Taylor", "Maria Garcia"];
 
 function isoDaysFromNow(n: number) {
   const d = new Date();
@@ -122,6 +137,17 @@ function pickStatus(i: number): Job["status"] {
   return arr[i % arr.length];
 }
 
+function generateVehicle(seed: number): Vehicle {
+  const make = VEHICLE_MAKES[seed % VEHICLE_MAKES.length];
+  const model = VEHICLE_MODELS[seed % VEHICLE_MODELS.length];
+  const color = VEHICLE_COLORS[seed % VEHICLE_COLORS.length];
+  const owner = OWNERS[seed % OWNERS.length];
+  const year = 2018 + (seed % 6); // 2018-2023
+  const licensePlate = `${String.fromCharCode(65 + (seed % 26))}${String.fromCharCode(65 + ((seed + 1) % 26))}${1000 + (seed % 9000)}`;
+  
+  return { make, model, year, licensePlate, color, owner };
+}
+
 function buildDemoJobs(days = 10): Job[] {
   const jobs: Job[] = [];
   let idCounter = 1000;
@@ -135,7 +161,14 @@ function buildDemoJobs(days = 10): Job[] {
         const customer = CUSTOMERS[(idCounter + k) % CUSTOMERS.length];
         const status = pickStatus(idCounter + k);
         const duration = 5 + ((idCounter + k) % 3); // 5–7 days
-        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), cars, customer, status });
+        
+        // Generate vehicles for this job
+        const vehicles: Vehicle[] = [];
+        for (let v = 0; v < cars; v++) {
+          vehicles.push(generateVehicle(idCounter + k + v));
+        }
+        
+        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), cars, customer, status, vehicles });
       }
     }
   }
@@ -271,6 +304,7 @@ export default function ShuttleForge() {
   // ---- Add Job (simple inline form) ----
   const [open, setOpen] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<Job>({
     id: "",
     route: selectedRoute || "Main Salmon",
@@ -279,6 +313,7 @@ export default function ShuttleForge() {
     cars: 1,
     customer: "",
     status: "Pending",
+    vehicles: [],
   });
 
   function addJob() {
@@ -295,6 +330,7 @@ export default function ShuttleForge() {
       cars: 1,
       customer: "",
       status: "Pending",
+      vehicles: [],
     });
   }
 
@@ -368,53 +404,78 @@ export default function ShuttleForge() {
                       return (
                         <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
                           <DayHeader iso={iso} count={rows.length} state={state} />
-                          <div className="grid gap-3 p-4">
-                            {rows.map((r) => (
-                              <div key={`${r.job.id}-${r.carIndex}`} className={`rounded-xl border p-4 ${
-                                r.risk.level === 'red' ? 'border-red-200 bg-red-50' : 
-                                r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50' : 
-                                'border-slate-200 bg-white'
-                              }`}>
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
-                                      {r.carIndex + 1}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                            {rows.map((r) => {
+                              const vehicle = r.job.vehicles[r.carIndex];
+                              const cardId = `${r.job.id}-${r.carIndex}`;
+                              const isExpanded = expandedCards.has(cardId);
+                              const needsMove = r.risk.level === 'red' || r.risk.level === 'orange';
+                              
+                              return (
+                                <div key={cardId} className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                                  r.risk.level === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
+                                  r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
+                                  'border-slate-200 bg-white hover:bg-slate-50'
+                                }`} onClick={() => {
+                                  const newExpanded = new Set(expandedCards);
+                                  if (isExpanded) {
+                                    newExpanded.delete(cardId);
+                                  } else {
+                                    newExpanded.add(cardId);
+                                  }
+                                  setExpandedCards(newExpanded);
+                                }}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
+                                        {r.carIndex + 1}
+                                      </div>
+                                      <div>
+                                        <div className="font-medium text-slate-900 text-sm">{vehicle.owner}</div>
+                                        <div className="text-xs text-slate-500">{vehicle.year} {vehicle.make} {vehicle.model}</div>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <div className="font-semibold text-slate-900">{r.job.customer}</div>
-                                      <div className="text-sm text-slate-600">Job {r.job.id}</div>
+                                    <div className="flex items-center gap-1">
+                                      {needsMove && <span className="text-red-500 text-xs">⚠️</span>}
+                                      <RiskPill level={r.risk.level} label={r.risk.label} />
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <RiskPill level={r.risk.level} label={r.risk.label} />
-                                    <span className={`px-2 py-1 rounded-full text-xs border ${
-                                      r.job.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                      r.job.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                      r.job.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                      'bg-slate-50 text-slate-700 border-slate-200'}`}>{r.job.status}</span>
-                                  </div>
+                                  
+                                  {isExpanded && (
+                                    <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <span className="text-slate-500">License:</span>
+                                          <div className="font-mono">{vehicle.licensePlate}</div>
+                                        </div>
+                                        <div>
+                                          <span className="text-slate-500">Color:</span>
+                                          <div>{vehicle.color}</div>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <span className="text-slate-500">Put-in:</span>
+                                          <div>{fmt(r.job.putIn)}</div>
+                                        </div>
+                                        <div>
+                                          <span className="text-slate-500">Take-out:</span>
+                                          <div>{fmt(r.job.takeOut)}</div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500">Delivery:</span>
+                                        <div>{fmt(r.deliveryISO)} {r.overflow && <span className="ml-1 text-amber-700">⚠️ overflow</span>}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500">Driver:</span>
+                                        <div className="text-slate-400">Unassigned</div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <div className="text-slate-500 text-xs mb-1">Put-in</div>
-                                    <div className="font-medium">{fmt(r.job.putIn)}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-500 text-xs mb-1">Take-out</div>
-                                    <div className="font-medium">{fmt(r.job.takeOut)}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-500 text-xs mb-1">Delivery Date</div>
-                                    <div className="font-medium">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-500 text-xs mb-1">Driver Assignment</div>
-                                    <div className="font-medium text-slate-400">Unassigned</div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       );

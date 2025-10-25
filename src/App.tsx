@@ -535,7 +535,7 @@ export default function ShuttleForge() {
                           >
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                               {rows.map((r) => (
-                                <VehicleCard key={`${r.job.id}-${r.carIndex}`} r={r} />
+                                <VehicleCard key={`${r.job.id}-${r.carIndex}`} r={r} expandedCards={expandedCards} setExpandedCards={setExpandedCards} />
                               ))}
                             </div>
                           </DayDropZone>
@@ -931,7 +931,7 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
   );
 }
 
-function VehicleCard({ r }: { r: CarRow }) {
+function VehicleCard({ r, expandedCards, setExpandedCards }: { r: CarRow; expandedCards: Set<string>; setExpandedCards: React.Dispatch<React.SetStateAction<Set<string>>> }) {
   const risk = (() => {
     const today = isoToday();
     if (r.deliveryISO < today) return { level:'green', pill: 'Delivered' };
@@ -944,12 +944,25 @@ function VehicleCard({ r }: { r: CarRow }) {
   const pillCls = risk.level==='red'?'bg-red-50 text-red-700 border-red-200': risk.level==='orange'?'bg-orange-50 text-orange-700 border-orange-200':'bg-emerald-50 text-emerald-700 border-emerald-200';
 
   const key = `${r.job.id}::${r.carIndex}`;
+  const vehicle = r.job.vehicles[r.carIndex];
+  const isExpanded = expandedCards.has(key);
 
   return (
     <div
       draggable
       onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', key); }}
-      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow cursor-grab active:cursor-grabbing select-none"
+      onClick={(e) => {
+        // Don't expand when dragging
+        if (e.defaultPrevented) return;
+        const newExpanded = new Set(expandedCards);
+        if (isExpanded) {
+          newExpanded.delete(key);
+        } else {
+          newExpanded.add(key);
+        }
+        setExpandedCards(newExpanded);
+      }}
+      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow cursor-pointer select-none transition-all"
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -959,6 +972,43 @@ function VehicleCard({ r }: { r: CarRow }) {
         </div>
         <span className={`px-2 py-1 rounded-full text-xs border ${pillCls}`}>{risk.pill}</span>
       </div>
+      
+      {isExpanded && (
+        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="text-slate-500">Vehicle:</span>
+              <div className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</div>
+            </div>
+            <div>
+              <span className="text-slate-500">Color:</span>
+              <div>{vehicle.color}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="text-slate-500">License Plate:</span>
+              <div className="font-mono font-medium">{vehicle.licensePlate}</div>
+            </div>
+            <div>
+              <span className="text-slate-500">Owner:</span>
+              <div>{vehicle.owner}</div>
+            </div>
+          </div>
+          <div>
+            <span className="text-slate-500">Driver Assigned:</span>
+            <div className="font-medium text-blue-600">{r.driver}</div>
+          </div>
+          <div>
+            <span className="text-slate-500">Delivery Date:</span>
+            <div>{fmt(r.deliveryISO)} {r.overflow && <span className="ml-1 text-amber-700">⚠️ overflow</span>}</div>
+          </div>
+          <div>
+            <span className="text-slate-500">Key Location:</span>
+            <div className="font-medium text-green-700">🔑 Office Key Box - Slot #{Math.floor(Math.random() * 20) + 1}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

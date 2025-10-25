@@ -91,6 +91,40 @@ function enumerateDays(startISO: string, endISO: string): string[] {
 
 function isoToday() { return new Date().toISOString().slice(0, 10); }
 
+// --- Date helpers ---
+const MS = 24*60*60*1000;
+function daysBetween(aISO: string, bISO: string) {
+  const a = new Date(aISO).setHours(0,0,0,0); const b = new Date(bISO).setHours(0,0,0,0);
+  return Math.round((a - b)/MS);
+}
+
+// Rule window for a job
+function allowedWindow(job: Job) {
+  return { start: addDaysISO(job.putIn, 1), end: addDaysISO(job.takeOut, -1) };
+}
+
+// Early label (+Xd)
+function earlyLabel(job: Job, deliveryISO: string) {
+  const d1 = addDaysISO(job.takeOut, -1);
+  if (deliveryISO < d1) {
+    const daysEarly = daysBetween(d1, deliveryISO);
+    return `Scheduled Early (+${daysEarly}d)`; // green pill
+  }
+  if (deliveryISO === d1) return 'On Time (D‑1)';
+  return 'Deliver Today';
+}
+
+// Tiny toast/banner
+function useBanner() {
+  const [msg, set] = React.useState<null | { tone: 'error'|'info'|'success'; text: string }>(null);
+  const Banner = () => !msg ? null : (
+    <div className={`fixed top-4 right-4 z-50 rounded-xl border shadow px-4 py-2 text-sm ${
+      msg.tone==='error'?'bg-red-50 border-red-200 text-red-800': msg.tone==='success'?'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-sky-50 border-sky-200 text-sky-900'}`}
+    >{msg.text}</div>
+  );
+  return { msg, set, Banner };
+}
+
 function simpleRisk(r: CarRow): { level: 'red'|'orange'|'green'; label: string } {
   const today = isoToday();
   const d1 = addDaysISO(r.job.takeOut, -1);
@@ -213,6 +247,11 @@ export default function ShuttleForge() {
   // Route filter only; date filtering happens on DELIVERY dates after scheduling
   const visibleJobs = useMemo(() => (selectedRoute ? jobs.filter(j => j.route === selectedRoute) : jobs), [jobs, selectedRoute]);
 
+  // Overrides map + refresher
+  const deliveryOverrides = React.useRef<Record<string, string>>({});
+  const [, setTick] = useState(0);
+  function forceRefresh(){ setTick(t => t+1); }
+
   // Each car becomes a scheduled delivery row
   // Prefer earliest available day within [putIn+1 .. takeOut-1]; cap 7/day, overflow to D-1 if needed
   const scheduledRows: CarRow[] = useMemo(() => {
@@ -239,8 +278,14 @@ export default function ShuttleForge() {
         }
       }
     }
-    return rows;
-  }, [visibleJobs]);
+    
+    // Apply overrides
+    return rows.map(r => {
+      const key = `${r.job.id}::${r.carIndex}`;
+      const over = deliveryOverrides.current[key];
+      return over ? { ...r, deliveryISO: over } : r;
+    });
+  }, [visibleJobs, setTick]);
 
   // Filter rows by DELIVERY window
   const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO]);
@@ -348,6 +393,24 @@ export default function ShuttleForge() {
   const [openCalendar, setOpenCalendar] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  
+  const { Banner, set: setBanner } = useBanner();
+
+  // Update delivery date for a car row (validates rules)
+  function moveVehicleRow(r: CarRow, newDeliveryISO: string) {
+    const { start, end } = allowedWindow(r.job);
+    // User moves must stick to rules; but existing bad data may remain for demo
+    if (newDeliveryISO < start || newDeliveryISO > end) {
+      setBanner({ tone: 'error', text: `Rule: move between ${fmt(start)} and ${fmt(end)} (Put‑in+1 to D‑1).` });
+      return false;
+    }
+    // Mutate scheduledRows by replacing r.deliveryISO
+    // If your rows are derived from jobs each render, keep a client override map instead:
+    deliveryOverrides.current[`${r.job.id}::${r.carIndex}`] = newDeliveryISO;
+    setBanner({ tone: 'success', text: `Moved to ${fmt(newDeliveryISO)}.` });
+    forceRefresh();
+    return true;
+  }
   const [draft, setDraft] = useState<Job>({
     id: "",
     route: selectedRoute || "Main Salmon",
@@ -459,86 +522,23 @@ export default function ShuttleForge() {
                   <>
                     {groups.map(({ iso, rows }, idx) => {
                       // decide header state
-                      const anyUrgent = rows.some(r => r.risk.level === 'red');
-                      const dayUtil = util30.find(u => u.iso === iso)?.used || 0;
-                      const state: 'good'|'today'|'urgent' = anyUrgent ? 'urgent' : dayUtil === 7 ? 'today' : 'good';
 
                       return (
                         <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
-                          <DayHeader iso={iso} count={rows.length} state={state} />
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-                            {rows.map((r) => {
-                              const vehicle = r.job.vehicles[r.carIndex];
-                              const cardId = `${r.job.id}-${r.carIndex}`;
-                              const isExpanded = expandedCards.has(cardId);
-                              const needsMove = r.risk.level === 'red' || r.risk.level === 'orange';
-                              
-                              return (
-                                <div key={cardId} className={`rounded-lg border p-3 cursor-pointer transition-all ${
-                                  r.risk.level === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
-                                  r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
-                                  'border-slate-200 bg-white hover:bg-slate-50'
-                                }`} onClick={() => {
-                                  const newExpanded = new Set(expandedCards);
-                                  if (isExpanded) {
-                                    newExpanded.delete(cardId);
-                                  } else {
-                                    newExpanded.add(cardId);
-                                  }
-                                  setExpandedCards(newExpanded);
-                                }}>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
-                                        {r.carIndex + 1}
-                                      </div>
-                                      <div>
-                                        <div className="font-medium text-slate-900 text-sm">{vehicle.owner}</div>
-                                        <div className="text-xs text-slate-500">{vehicle.year} {vehicle.make} {vehicle.model}</div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      {needsMove && <span className="text-red-500 text-xs">⚠️</span>}
-                                      <RiskPill level={r.risk.level} label={r.risk.label} />
-                                    </div>
-                                  </div>
-                                  
-                                  {isExpanded && (
-                                    <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                          <span className="text-slate-500">License:</span>
-                                          <div className="font-mono">{vehicle.licensePlate}</div>
-                                        </div>
-                                        <div>
-                                          <span className="text-slate-500">Color:</span>
-                                          <div>{vehicle.color}</div>
-                                        </div>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                          <span className="text-slate-500">Put-in:</span>
-                                          <div>{fmt(r.job.putIn)}</div>
-                                        </div>
-                                        <div>
-                                          <span className="text-slate-500">Take-out:</span>
-                                          <div>{fmt(r.job.takeOut)}</div>
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <span className="text-slate-500">Delivery:</span>
-                                        <div>{fmt(r.deliveryISO)} {r.overflow && <span className="ml-1 text-amber-700">⚠️ overflow</span>}</div>
-                                      </div>
-                                      <div>
-                                        <span className="text-slate-500">Driver:</span>
-                                        <div className="font-medium text-blue-600">{r.driver}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <DayHeader iso={iso} count={rows.length} drivers={8} />
+                          <DayDropZone
+                            onDropVehicle={(key)=>{
+                              const found = rows.find(r => `${r.job.id}::${r.carIndex}` === key);
+                              if (!found) return;
+                              moveVehicleRow(found, iso);
+                            }}
+                          >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {rows.map((r) => (
+                                <VehicleCard key={`${r.job.id}-${r.carIndex}`} r={r} />
+                              ))}
+                            </div>
+                          </DayDropZone>
                         </div>
                       );
                     })}
@@ -723,6 +723,9 @@ export default function ShuttleForge() {
         </footer>
       </div>
 
+      {/* Banner for toasts */}
+      <Banner />
+
       {/* Calendar Modal */}
       <Modal open={openCalendar} onClose={() => setOpenCalendar(false)}>
         <div className="flex items-center justify-between mb-3">
@@ -880,15 +883,14 @@ function RangeButton({ label, active, onClick }: { label: string; active: boolea
   );
 }
 
-function DayHeader({ iso, count, state }: { iso: string; count: number; state: 'good'|'today'|'urgent' }) {
-  const color = state === 'urgent' ? 'bg-red-50 border-red-200 text-red-800'
-    : state === 'today' ? 'bg-orange-50 border-orange-200 text-orange-800'
-    : 'bg-emerald-50 border-emerald-200 text-emerald-800';
-  const label = state === 'urgent' ? 'URGENT' : state === 'today' ? 'DELIVER TODAY' : 'ALL GOOD';
+function DayHeader({ iso, count, drivers = 8 }: { iso: string; count: number; drivers?: number }) {
+  const over = count > drivers; const atCap = count === drivers;
+  const color = over ? 'bg-red-50 border-red-200 text-red-800' : atCap ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800';
+  const label = over ? `OVERBOOKED • ${count}/${drivers}` : atCap ? `DELIVER TODAY • ${count}/${drivers}` : `ALL GOOD • ${count}/${drivers}`;
   return (
     <div className={`px-4 py-2 flex items-center justify-between border ${color}`}>
       <div className="font-semibold text-sm">{fmt(iso)} — Deliveries</div>
-      <div className="text-xs font-semibold">{count} cars • {label}</div>
+      <div className="text-xs font-semibold">{label}</div>
     </div>
   );
 }
@@ -925,6 +927,50 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
         </div>
         <div className="p-4 max-h-[80vh] overflow-auto">{children}</div>
       </div>
+    </div>
+  );
+}
+
+function VehicleCard({ r }: { r: CarRow }) {
+  const risk = (() => {
+    const today = isoToday();
+    if (r.deliveryISO < today) return { level:'green', pill: 'Delivered' };
+    const d1 = addDaysISO(r.job.takeOut, -1);
+    if (r.deliveryISO < d1) return { level:'green', pill: earlyLabel(r.job, r.deliveryISO) };
+    if (r.deliveryISO === d1) return { level:'orange', pill: 'Deliver Today' };
+    return { level:'red', pill: 'Late (Take‑out day!)' }; // exists only in demo/problem data
+  })();
+
+  const pillCls = risk.level==='red'?'bg-red-50 text-red-700 border-red-200': risk.level==='orange'?'bg-orange-50 text-orange-700 border-orange-200':'bg-emerald-50 text-emerald-700 border-emerald-200';
+
+  const key = `${r.job.id}::${r.carIndex}`;
+
+  return (
+    <div
+      draggable
+      onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', key); }}
+      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow cursor-grab active:cursor-grabbing select-none"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="font-semibold">{r.job.customer}</div>
+          <div className="text-xs text-slate-600">Car {r.carIndex+1}</div>
+          <div className="text-xs text-slate-600">Put‑in {fmt(r.job.putIn)} • Take‑out {fmt(r.job.takeOut)}</div>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs border ${pillCls}`}>{risk.pill}</span>
+      </div>
+    </div>
+  );
+}
+
+function DayDropZone({ children, onDropVehicle }: { children: React.ReactNode; onDropVehicle: (key: string)=>void }){
+  return (
+    <div
+      onDragOver={(e)=>e.preventDefault()}
+      onDrop={(e)=>{ e.preventDefault(); const key = e.dataTransfer.getData('text/plain'); if(key) onDropVehicle(key); }}
+      className="rounded-xl border border-slate-200 p-3"
+    >
+      {children}
     </div>
   );
 }

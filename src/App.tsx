@@ -97,6 +97,26 @@ function simpleRisk(r: CarRow): { level: 'red'|'orange'|'green'; label: string }
   return { level: 'green', label: 'Ready' };
 }
 
+// --- Demo anomalies ---
+// Add forced overbook counts on specific dates relative to today.
+// Example list based on your sample: Nov 4: 14/7, Nov 5: 13/7, Nov 8: 18/7, etc.
+function isoPlusDays(n: number) {
+  const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0,10);
+}
+
+// Map of ISO date -> forced used count (will replace calculated usage for calendar + warnings)
+const DEMO_FORCE: Record<string, number> = {
+  // Today .. +29 days window. Adjust offsets as needed for demos.
+  [isoPlusDays(10)]: 14, // ~Nov 4
+  [isoPlusDays(11)]: 13,
+  [isoPlusDays(12)]: 10,
+  [isoPlusDays(13)]: 10,
+  [isoPlusDays(15)]: 18,
+  [isoPlusDays(17)]: 11,
+  [isoPlusDays(18)]: 9,
+  [isoPlusDays(19)]: 5,
+};
+
 function pickStatus(i: number): Job["status"] {
   const arr: Job["status"][] = ["Pending", "Accepted", "In Progress", "Accepted"]; // skew green
   return arr[i % arr.length];
@@ -230,15 +250,27 @@ export default function ShuttleForge() {
 
   const util30 = useMemo(() => {
     const days: { iso: string; used: number }[] = [];
-    const start = new Date(startISO); const end = new Date(startISO); end.setDate(end.getDate() + 29);
-    const usage: Record<string, number> = {};
-    for (const r of scheduledRows) usage[r.deliveryISO] = (usage[r.deliveryISO] || 0) + 1;
-    const d = new Date(start); while (d <= end) { const iso = d.toISOString().slice(0,10); days.push({ iso, used: usage[iso] || 0 }); d.setDate(d.getDate()+1); }
+    const start = new Date(startISO);
+    const end = new Date(startISO); end.setDate(end.getDate() + 29);
+    const baseUsage: Record<string, number> = {};
+    for (const r of scheduledRows) baseUsage[r.deliveryISO] = (baseUsage[r.deliveryISO] || 0) + 1;
+    const d = new Date(start);
+    while (d <= end) {
+      const iso = d.toISOString().slice(0, 10);
+      const forced = DEMO_FORCE[iso];
+      const used = forced !== undefined ? forced : (baseUsage[iso] || 0);
+      days.push({ iso, used });
+      d.setDate(d.getDate() + 1);
+    }
     return days;
   }, [scheduledRows, startISO]);
 
+  // Compute overbooked days from util30
+  const overbookedDays = useMemo(() => util30.filter(d => d.used > 7), [util30]);
+
   // ---- Add Job (simple inline form) ----
   const [open, setOpen] = useState(false);
+  const [openCalendar, setOpenCalendar] = useState(false);
   const [draft, setDraft] = useState<Job>({
     id: "",
     route: selectedRoute || "Main Salmon",
@@ -329,10 +361,9 @@ export default function ShuttleForge() {
                   <>
                     {groups.map(({ iso, rows }, idx) => {
                       // decide header state
-                      const today = isoToday();
                       const anyUrgent = rows.some(r => r.risk.level === 'red');
-                      const isTodayD1 = today === addDaysISO(rows[0].job.takeOut, -1) && rows.some(r => r.deliveryISO === today);
-                      const state: 'good'|'today'|'urgent' = anyUrgent ? 'urgent' : isTodayD1 ? 'today' : 'good';
+                      const dayUtil = util30.find(u => u.iso === iso)?.used || 0;
+                      const state: 'good'|'today'|'urgent' = anyUrgent ? 'urgent' : dayUtil === 7 ? 'today' : 'good';
 
                       return (
                         <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
@@ -382,20 +413,22 @@ export default function ShuttleForge() {
 
           {/* Metrics card */}
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h4 className="font-semibold mb-3">Capacity & Warnings</h4>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <Metric label="Cars to Move" value={String(metrics.totalCars)} />
-                <Metric label="Van Drivers Needed" value={String(metrics.neededVanDrivers)} />
-                <Metric label="Drivers Available" value={`${metrics.driverCapacity.available}/${metrics.driverCapacity.max}`} />
-                <Metric
-                  label="Status"
-                  value={metrics.overbooked ? "⚠️ OVERBOOKED" : "OK"}
-                  highlight={metrics.overbooked}
-                />
+            <ExpandableCard title="Capacity & Warnings" onExpand={() => setOpenCalendar(true)}>
+              <p>Deliveries in view: {metrics.totalDeliveries}</p>
+              <p>Van Drivers Needed: {metrics.neededVanDrivers}</p>
+              <p>Shuttle Driver Capacity: 7/7</p>
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                <div className="text-sm font-semibold mb-1">Status: {overbookedDays.length > 0 ? '⚠️ OVERBOOKED' : 'OK'}</div>
+                {overbookedDays.length > 0 && (
+                  <ul className="text-xs list-disc pl-5 space-y-1">
+                    {overbookedDays.slice(0,5).map(d => (
+                      <li key={d.iso}>{fmt(d.iso)} — {d.used}/7</li>
+                    ))}
+                    {overbookedDays.length > 5 && <li>+ {overbookedDays.length - 5} more…</li>}
+                  </ul>
+                )}
               </div>
-              <p className="text-xs text-slate-500 mt-3">Rule: 1 van driver whenever cars &gt; 0.</p>
-            </div>
+            </ExpandableCard>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-semibold mb-2">Date Range</h4>
@@ -449,17 +482,16 @@ export default function ShuttleForge() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h4 className="font-semibold mb-2">30‑Day Delivery Utilization</h4>
+            <ExpandableCard title="30‑Day Delivery Utilization" onExpand={() => setOpenCalendar(true)}>
               <div className="grid grid-cols-10 gap-2 text-center">
                 {util30.map((d) => (
-                  <div key={d.iso} className={`rounded-lg p-2 border ${d.used > 7 ? "border-amber-400 bg-amber-50" : d.used === 7 ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+                  <div key={d.iso} className={`rounded-lg p-2 border ${d.used > 7 ? "border-red-400 bg-red-50" : d.used === 7 ? "border-amber-400 bg-amber-50" : "border-emerald-400 bg-emerald-50"}`}>
                     <div className="text-xs">{fmt(d.iso)}</div>
                     <div className="text-sm font-semibold">{d.used}/7</div>
                   </div>
                 ))}
               </div>
-            </div>
+            </ExpandableCard>
           </div>
         </div>
 
@@ -553,6 +585,23 @@ export default function ShuttleForge() {
           Built for speed: refactor to Supabase later; ship value now.
         </footer>
       </div>
+
+      {/* Calendar Modal */}
+      <Modal open={openCalendar} onClose={() => setOpenCalendar(false)}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">30‑Day Delivery Utilization</h3>
+          <div className="text-sm text-slate-600">Red = over 7, Yellow = exactly 7, Green = under 7</div>
+        </div>
+        <CalendarGrid days={util30} />
+        {overbookedDays.length > 0 && (
+          <div className="mt-4">
+            <h4 className="font-semibold mb-1">Overbooked Days</h4>
+            <ul className="list-disc pl-5 text-sm space-y-1">
+              {overbookedDays.map(d => <li key={`ob-${d.iso}`}>{fmt(d.iso)} — {d.used}/7 (over by {d.used - 7})</li>)}
+            </ul>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -584,14 +633,51 @@ function RiskPill({ level, label }: { level: 'red'|'orange'|'green'; label: stri
   return <span className={`px-2 py-1 rounded-full text-xs border ${cls}`}>{label}</span>;
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <label className="text-slate-700 self-center">{children}</label>;
-}
-function Metric({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function ExpandableCard({ title, children, onExpand }: { title: string; children: React.ReactNode; onExpand?: () => void }) {
   return (
-    <div className={`rounded-xl p-3 border ${highlight ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
-      <div className="text-xs text-slate-600">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-semibold">{title}</h4>
+        {onExpand && (
+          <button onClick={onExpand} className="text-sm px-3 py-1 rounded-lg border hover:bg-slate-50">Expand</button>
+        )}
+      </div>
+      {children}
     </div>
   );
+}
+
+function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-5xl shadow-xl border border-slate-200">
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="font-semibold">Details</div>
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-800">✕</button>
+        </div>
+        <div className="p-4 max-h-[80vh] overflow-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarGrid({ days }: { days: { iso: string; used: number }[] }) {
+  return (
+    <div className="grid grid-cols-7 gap-3">
+      {days.map((d) => (
+        <div key={d.iso} className={`rounded-xl p-3 border text-sm ${
+          d.used > 7 ? 'border-red-400 bg-red-50' : d.used === 7 ? 'border-amber-400 bg-amber-50' : 'border-emerald-400 bg-emerald-50'
+        }`}>
+          <div className="text-xs font-semibold mb-1">{fmt(d.iso)}</div>
+          <div className="text-lg font-bold">{d.used}/7</div>
+          {d.used > 7 && <div className="text-[11px] mt-1 text-red-700">Over by {d.used - 7}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="text-slate-700 self-center">{children}</label>;
 }

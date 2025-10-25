@@ -407,6 +407,9 @@ export default function ShuttleForge() {
   
   const { Banner, set: setBanner } = useBanner();
 
+  // Override refs
+  const driverOverrides = React.useRef<Record<string, string>>({});
+
   // Update delivery date for a car row (validates rules)
   function moveVehicleRow(r: CarRow, newDeliveryISO: string) {
     const { start, end } = allowedWindow(r.job);
@@ -424,7 +427,6 @@ export default function ShuttleForge() {
   }
 
   // Update driver assignment
-  const driverOverrides = React.useRef<Record<string, string>>({});
   function updateDriver(jobId: string, carIndex: number, newDriver: string) {
     driverOverrides.current[`${jobId}::${carIndex}`] = newDriver;
     setBanner({ tone: 'success', text: `Driver updated to ${newDriver}.` });

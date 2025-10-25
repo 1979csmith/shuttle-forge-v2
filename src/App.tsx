@@ -368,40 +368,54 @@ export default function ShuttleForge() {
                       return (
                         <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
                           <DayHeader iso={iso} count={rows.length} state={state} />
-                          <table className="w-full text-sm">
-                            <thead className="text-slate-700">
-                              <tr>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Customer</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Put‑in</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Take‑out</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Delivery (this day)</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Car</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Status</th>
-                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Risk</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {rows.map((r) => (
-                                <tr key={`${r.job.id}-${r.carIndex}`} className={`border-t ${
-                                  r.risk.level === 'red' ? 'bg-red-50/40' : r.risk.level === 'orange' ? 'bg-orange-50/40' : ''
-                                }`}>
-                                  <td className="px-3 py-1">{r.job.customer}</td>
-                                  <td className="px-3 py-1">{fmt(r.job.putIn)}</td>
-                                  <td className="px-3 py-1">{fmt(r.job.takeOut)}</td>
-                                  <td className="px-3 py-1">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</td>
-                                  <td className="px-3 py-1">Car {r.carIndex + 1}</td>
-                                  <td className="px-3 py-1">
+                          <div className="grid gap-3 p-4">
+                            {rows.map((r) => (
+                              <div key={`${r.job.id}-${r.carIndex}`} className={`rounded-xl border p-4 ${
+                                r.risk.level === 'red' ? 'border-red-200 bg-red-50' : 
+                                r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50' : 
+                                'border-slate-200 bg-white'
+                              }`}>
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
+                                      {r.carIndex + 1}
+                                    </div>
+                                    <div>
+                                      <div className="font-semibold text-slate-900">{r.job.customer}</div>
+                                      <div className="text-sm text-slate-600">Job {r.job.id}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <RiskPill level={r.risk.level} label={r.risk.label} />
                                     <span className={`px-2 py-1 rounded-full text-xs border ${
                                       r.job.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                       r.job.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                       r.job.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                       'bg-slate-50 text-slate-700 border-slate-200'}`}>{r.job.status}</span>
-                                  </td>
-                                  <td className="px-3 py-1"><RiskPill level={r.risk.level} label={r.risk.label} /></td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Put-in</div>
+                                    <div className="font-medium">{fmt(r.job.putIn)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Take-out</div>
+                                    <div className="font-medium">{fmt(r.job.takeOut)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Delivery Date</div>
+                                    <div className="font-medium">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Driver Assignment</div>
+                                    <div className="font-medium text-slate-400">Unassigned</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       );
                     })}

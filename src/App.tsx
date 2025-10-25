@@ -310,10 +310,44 @@ export default function ShuttleForge() {
     return Math.max(0, totalVehicles - maxDrivers);
   }, [rowsInRange]);
 
+  // Get vehicles for a specific day
+  const getVehiclesForDay = (dayISO: string) => {
+    return enriched.filter(r => r.deliveryISO === dayISO);
+  };
+
+  // Get recommendations for moving vehicles from an overbooked day
+  const getMoveRecommendations = (dayISO: string) => {
+    const vehicles = getVehiclesForDay(dayISO);
+    const dayUtil = util30.find(d => d.iso === dayISO);
+    if (!dayUtil || dayUtil.used <= 7) return [];
+
+    const recommendations = [];
+    const overage = dayUtil.used - 7;
+    
+    // Find days with available capacity
+    const availableDays = util30.filter(d => d.used < 7 && d.iso !== dayISO);
+    
+    for (let i = 0; i < overage && i < vehicles.length; i++) {
+      const vehicle = vehicles[i];
+      const bestDay = availableDays.find(d => d.iso > vehicle.job.putIn && d.iso < vehicle.job.takeOut);
+      if (bestDay) {
+        recommendations.push({
+          vehicle,
+          fromDay: dayISO,
+          toDay: bestDay.iso,
+          reason: `Move to ${fmt(bestDay.iso)} (${bestDay.used}/7 capacity)`
+        });
+      }
+    }
+    
+    return recommendations;
+  };
+
   // ---- Add Job (simple inline form) ----
   const [open, setOpen] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [draft, setDraft] = useState<Job>({
     id: "",
     route: selectedRoute || "Main Salmon",
@@ -695,13 +729,110 @@ export default function ShuttleForge() {
           <h3 className="text-lg font-semibold">30‑Day Delivery Utilization</h3>
           <div className="text-sm text-slate-600">Red = over 7, Yellow = exactly 7, Green = under 7</div>
         </div>
-        <CalendarGrid days={util30} />
+        <CalendarGrid days={util30} onDayClick={setSelectedDay} />
         {overbookedDays.length > 0 && (
           <div className="mt-4">
             <h4 className="font-semibold mb-1">Overbooked Days</h4>
             <ul className="list-disc pl-5 text-sm space-y-1">
               {overbookedDays.map(d => <li key={`ob-${d.iso}`}>{fmt(d.iso)} — {d.used}/7 (over by {d.used - 7})</li>)}
             </ul>
+          </div>
+        )}
+      </Modal>
+
+      {/* Day Details Modal */}
+      <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)}>
+        {selectedDay && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Day Details - {fmt(selectedDay)}</h3>
+              <div className="text-sm text-slate-600">
+                {getVehiclesForDay(selectedDay).length} vehicles scheduled
+              </div>
+            </div>
+            
+            <div className="grid gap-3 mb-4">
+              {getVehiclesForDay(selectedDay).map((r) => {
+                const vehicle = r.job.vehicles[r.carIndex];
+                const cardId = `${r.job.id}-${r.carIndex}`;
+                const isExpanded = expandedCards.has(cardId);
+                const needsMove = r.risk.level === 'red' || r.risk.level === 'orange';
+                
+                return (
+                  <div key={cardId} className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                    r.risk.level === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
+                    r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
+                    'border-slate-200 bg-white hover:bg-slate-50'
+                  }`} onClick={() => {
+                    const newExpanded = new Set(expandedCards);
+                    if (isExpanded) {
+                      newExpanded.delete(cardId);
+                    } else {
+                      newExpanded.add(cardId);
+                    }
+                    setExpandedCards(newExpanded);
+                  }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
+                          {r.carIndex + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium text-slate-900 text-sm">{vehicle.owner}</div>
+                          <div className="text-xs text-slate-500">{vehicle.year} {vehicle.make} {vehicle.model}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {needsMove && <span className="text-red-500 text-xs">⚠️</span>}
+                        <RiskPill level={r.risk.level} label={r.risk.label} />
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500">License:</span>
+                            <div className="font-mono">{vehicle.licensePlate}</div>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Driver:</span>
+                            <div className="font-medium text-blue-600">{r.driver}</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500">Put-in:</span>
+                            <div>{fmt(r.job.putIn)}</div>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Take-out:</span>
+                            <div>{fmt(r.job.takeOut)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {getMoveRecommendations(selectedDay).length > 0 && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">📋 Move Recommendations</h4>
+                <div className="space-y-2 text-sm">
+                  {getMoveRecommendations(selectedDay).map((rec, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
+                      <div>
+                        <span className="font-medium">{rec.vehicle.job.vehicles[rec.vehicle.carIndex].owner}</span>
+                        <span className="text-slate-500 ml-2">({rec.vehicle.driver})</span>
+                      </div>
+                      <div className="text-blue-600 font-medium">{rec.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>
@@ -765,16 +896,23 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
   );
 }
 
-function CalendarGrid({ days }: { days: { iso: string; used: number }[] }) {
+function CalendarGrid({ days, onDayClick }: { days: { iso: string; used: number }[]; onDayClick: (dayISO: string) => void }) {
   return (
     <div className="grid grid-cols-7 gap-3">
       {days.map((d) => (
-        <div key={d.iso} className={`rounded-xl p-3 border text-sm ${
-          d.used > 7 ? 'border-red-400 bg-red-50' : d.used === 7 ? 'border-amber-400 bg-amber-50' : 'border-emerald-400 bg-emerald-50'
-        }`}>
+        <div 
+          key={d.iso} 
+          className={`rounded-xl p-3 border text-sm cursor-pointer hover:shadow-md transition-all ${
+            d.used > 7 ? 'border-red-400 bg-red-50 hover:bg-red-100' : 
+            d.used === 7 ? 'border-amber-400 bg-amber-50 hover:bg-amber-100' : 
+            'border-emerald-400 bg-emerald-50 hover:bg-emerald-100'
+          }`}
+          onClick={() => onDayClick(d.iso)}
+        >
           <div className="text-xs font-semibold mb-1">{fmt(d.iso)}</div>
           <div className="text-lg font-bold">{d.used}/7</div>
           {d.used > 7 && <div className="text-[11px] mt-1 text-red-700">Over by {d.used - 7}</div>}
+          {d.used > 7 && <div className="text-[10px] text-red-600 mt-1">Click to see issues</div>}
         </div>
       ))}
     </div>

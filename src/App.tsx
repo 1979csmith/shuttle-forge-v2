@@ -20,6 +20,8 @@ type Job = {
   route: string;
   putIn: string; // ISO date
   takeOut: string; // ISO date
+  putInLocation: string;
+  takeOutLocation: string;
   cars: number; // number of vehicles
   customer: string;
   status: "Pending" | "Accepted" | "In Progress" | "Completed";
@@ -46,6 +48,9 @@ const CUSTOMERS = [
   "Ramirez Outfit",
   "Clark & Co.",
 ];
+
+const PUT_IN_LOCATIONS = ["Boundary Creek", "Corn Creek", "Indian Creek", "Salmon River Lodge"];
+const TAKE_OUT_LOCATIONS = ["Cash Bar", "Vinegar Creek", "Carey Creek", "Long Tom Bar"];
 
 const VEHICLE_MAKES = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi"];
 const VEHICLE_MODELS = ["Camry", "F-150", "Civic", "Silverado", "Altima", "X3", "C-Class", "A4"];
@@ -197,6 +202,8 @@ function buildDemoJobs(days = 10): Job[] {
         const customer = CUSTOMERS[(idCounter + k) % CUSTOMERS.length];
         const status = pickStatus(idCounter + k);
         const duration = 5 + ((idCounter + k) % 3); // 5–7 days
+        const putInLocation = PUT_IN_LOCATIONS[(idCounter + k) % PUT_IN_LOCATIONS.length];
+        const takeOutLocation = TAKE_OUT_LOCATIONS[(idCounter + k) % TAKE_OUT_LOCATIONS.length];
         
         // Generate vehicles for this job
         const vehicles: Vehicle[] = [];
@@ -204,7 +211,7 @@ function buildDemoJobs(days = 10): Job[] {
           vehicles.push(generateVehicle(idCounter + k + v));
         }
         
-        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), cars, customer, status, vehicles });
+        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), putInLocation, takeOutLocation, cars, customer, status, vehicles });
       }
     }
   }
@@ -282,8 +289,12 @@ export default function ShuttleForge() {
     // Apply overrides
     return rows.map(r => {
       const key = `${r.job.id}::${r.carIndex}`;
-      const over = deliveryOverrides.current[key];
-      return over ? { ...r, deliveryISO: over } : r;
+      const deliveryOver = deliveryOverrides.current[key];
+      const driverOver = driverOverrides.current[key];
+      let result = r;
+      if (deliveryOver) result = { ...result, deliveryISO: deliveryOver };
+      if (driverOver) result = { ...result, driver: driverOver };
+      return result;
     });
   }, [visibleJobs, setTick]);
 
@@ -411,11 +422,27 @@ export default function ShuttleForge() {
     forceRefresh();
     return true;
   }
+
+  // Update driver assignment
+  const driverOverrides = React.useRef<Record<string, string>>({});
+  function updateDriver(jobId: string, carIndex: number, newDriver: string) {
+    driverOverrides.current[`${jobId}::${carIndex}`] = newDriver;
+    setBanner({ tone: 'success', text: `Driver updated to ${newDriver}.` });
+    forceRefresh();
+  }
+
+  // Update locations
+  function updateLocations(jobId: string, putInLocation: string, takeOutLocation: string) {
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, putInLocation, takeOutLocation } : j));
+    setBanner({ tone: 'success', text: `Locations updated.` });
+  }
   const [draft, setDraft] = useState<Job>({
     id: "",
     route: selectedRoute || "Main Salmon",
     putIn: startISO,
     takeOut: isoDaysFromNow(3),
+    putInLocation: PUT_IN_LOCATIONS[0],
+    takeOutLocation: TAKE_OUT_LOCATIONS[0],
     cars: 1,
     customer: "",
     status: "Pending",
@@ -433,6 +460,8 @@ export default function ShuttleForge() {
       route: selectedRoute || "Main Salmon",
       putIn: startISO,
       takeOut: isoDaysFromNow(3),
+      putInLocation: PUT_IN_LOCATIONS[0],
+      takeOutLocation: TAKE_OUT_LOCATIONS[0],
       cars: 1,
       customer: "",
       status: "Pending",
@@ -535,7 +564,14 @@ export default function ShuttleForge() {
                           >
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                               {rows.map((r) => (
-                                <VehicleCard key={`${r.job.id}-${r.carIndex}`} r={r} expandedCards={expandedCards} setExpandedCards={setExpandedCards} />
+                                <VehicleCard 
+                                  key={`${r.job.id}-${r.carIndex}`} 
+                                  r={r} 
+                                  expandedCards={expandedCards} 
+                                  setExpandedCards={setExpandedCards}
+                                  onUpdateDriver={updateDriver}
+                                  onUpdateLocations={updateLocations}
+                                />
                               ))}
                             </div>
                           </DayDropZone>
@@ -931,7 +967,13 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
   );
 }
 
-function VehicleCard({ r, expandedCards, setExpandedCards }: { r: CarRow; expandedCards: Set<string>; setExpandedCards: React.Dispatch<React.SetStateAction<Set<string>>> }) {
+function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpdateLocations }: { 
+  r: CarRow; 
+  expandedCards: Set<string>; 
+  setExpandedCards: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onUpdateDriver: (jobId: string, carIndex: number, newDriver: string) => void;
+  onUpdateLocations: (jobId: string, putInLocation: string, takeOutLocation: string) => void;
+}) {
   const risk = (() => {
     const today = isoToday();
     if (r.deliveryISO < today) return { level:'green', pill: 'Delivered' };
@@ -946,14 +988,18 @@ function VehicleCard({ r, expandedCards, setExpandedCards }: { r: CarRow; expand
   const key = `${r.job.id}::${r.carIndex}`;
   const vehicle = r.job.vehicles[r.carIndex];
   const isExpanded = expandedCards.has(key);
+  
+  const [editingDriver, setEditingDriver] = React.useState(false);
+  const [editingPutIn, setEditingPutIn] = React.useState(false);
+  const [editingTakeOut, setEditingTakeOut] = React.useState(false);
 
   return (
     <div
       draggable
       onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', key); }}
       onClick={(e) => {
-        // Don't expand when dragging
-        if (e.defaultPrevented) return;
+        // Don't expand when dragging or clicking on inputs
+        if (e.defaultPrevented || (e.target as HTMLElement).tagName === 'SELECT') return;
         const newExpanded = new Set(expandedCards);
         if (isExpanded) {
           newExpanded.delete(key);
@@ -968,13 +1014,15 @@ function VehicleCard({ r, expandedCards, setExpandedCards }: { r: CarRow; expand
         <div>
           <div className="font-semibold">{r.job.customer}</div>
           <div className="text-xs text-slate-600">Car {r.carIndex+1}</div>
-          <div className="text-xs text-slate-600">Put‑in {fmt(r.job.putIn)} • Take‑out {fmt(r.job.takeOut)}</div>
+          <div className="text-xs text-slate-600">
+            Put‑in {fmt(r.job.putIn)} @ {r.job.putInLocation} • Take‑out {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}
+          </div>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs border ${pillCls}`}>{risk.pill}</span>
       </div>
       
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
+        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs" onClick={(e) => e.stopPropagation()}>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-slate-500">Vehicle:</span>
@@ -995,10 +1043,73 @@ function VehicleCard({ r, expandedCards, setExpandedCards }: { r: CarRow; expand
               <div>{vehicle.owner}</div>
             </div>
           </div>
-          <div>
-            <span className="text-slate-500">Driver Assigned:</span>
-            <div className="font-medium text-blue-600">{r.driver}</div>
+          
+          <div className="border-t pt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-slate-500">Put-in Location:</span>
+              {!editingPutIn && <button onClick={() => setEditingPutIn(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
+            </div>
+            {editingPutIn ? (
+              <select 
+                value={r.job.putInLocation}
+                onChange={(e) => {
+                  onUpdateLocations(r.job.id, e.target.value, r.job.takeOutLocation);
+                  setEditingPutIn(false);
+                }}
+                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                autoFocus
+              >
+                {PUT_IN_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            ) : (
+              <div className="font-medium text-green-700">📍 {r.job.putInLocation}</div>
+            )}
           </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-slate-500">Take-out Location:</span>
+              {!editingTakeOut && <button onClick={() => setEditingTakeOut(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
+            </div>
+            {editingTakeOut ? (
+              <select 
+                value={r.job.takeOutLocation}
+                onChange={(e) => {
+                  onUpdateLocations(r.job.id, r.job.putInLocation, e.target.value);
+                  setEditingTakeOut(false);
+                }}
+                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                autoFocus
+              >
+                {TAKE_OUT_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            ) : (
+              <div className="font-medium text-green-700">📍 {r.job.takeOutLocation}</div>
+            )}
+          </div>
+          
+          <div className="border-t pt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-slate-500">Driver Assigned:</span>
+              {!editingDriver && <button onClick={() => setEditingDriver(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
+            </div>
+            {editingDriver ? (
+              <select 
+                value={r.driver}
+                onChange={(e) => {
+                  onUpdateDriver(r.job.id, r.carIndex, e.target.value);
+                  setEditingDriver(false);
+                }}
+                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                autoFocus
+              >
+                {DRIVERS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            ) : (
+              <div className="font-medium text-blue-600">{r.driver}</div>
+            )}
+          </div>
+          
           <div>
             <span className="text-slate-500">Delivery Date:</span>
             <div>{fmt(r.deliveryISO)} {r.overflow && <span className="ml-1 text-amber-700">⚠️ overflow</span>}</div>

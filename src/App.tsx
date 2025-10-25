@@ -256,6 +256,7 @@ export default function ShuttleForge() {
 
   // Overrides map + refresher
   const deliveryOverrides = React.useRef<Record<string, string>>({});
+  const driverOverrides = React.useRef<Record<string, string>>({});
   const [, setTick] = useState(0);
   function forceRefresh(){ setTick(t => t+1); }
 
@@ -406,9 +407,6 @@ export default function ShuttleForge() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   
   const { Banner, set: setBanner } = useBanner();
-
-  // Override refs
-  const driverOverrides = React.useRef<Record<string, string>>({});
 
   // Update delivery date for a car row (validates rules)
   function moveVehicleRow(r: CarRow, newDeliveryISO: string) {

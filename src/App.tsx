@@ -32,6 +32,7 @@ type CarRow = {
   deliveryISO: string;
   pulledForward: boolean;
   overflow: boolean;
+  driver: string;
 };
 
 const ROUTES = ["Main Salmon", "Middle Fork"] as const;
@@ -50,6 +51,7 @@ const VEHICLE_MAKES = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan", "BMW", 
 const VEHICLE_MODELS = ["Camry", "F-150", "Civic", "Silverado", "Altima", "X3", "C-Class", "A4"];
 const VEHICLE_COLORS = ["White", "Black", "Silver", "Blue", "Red", "Gray", "Green", "Gold"];
 const OWNERS = ["John Smith", "Sarah Johnson", "Mike Wilson", "Lisa Brown", "David Lee", "Amy Davis", "Chris Taylor", "Maria Garcia"];
+const DRIVERS = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"];
 
 function isoDaysFromNow(n: number) {
   const d = new Date();
@@ -231,9 +233,9 @@ export default function ShuttleForge() {
         if (!assigned) {
           const d1 = addDaysISO(job.takeOut, -1);
           usage[d1] = (usage[d1] || 0) + 1;
-          rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true });
+          rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true, driver: DRIVERS[rows.length % DRIVERS.length] });
         } else {
-          rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false });
+          rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false, driver: DRIVERS[rows.length % DRIVERS.length] });
         }
       }
     }
@@ -301,6 +303,13 @@ export default function ShuttleForge() {
   // Compute overbooked days from util30
   const overbookedDays = useMemo(() => util30.filter(d => d.used > 7), [util30]);
 
+  // Calculate unassigned vehicles (more than 8 drivers needed)
+  const unassignedVehicles = useMemo(() => {
+    const totalVehicles = rowsInRange.length;
+    const maxDrivers = 8; // D1-D8
+    return Math.max(0, totalVehicles - maxDrivers);
+  }, [rowsInRange]);
+
   // ---- Add Job (simple inline form) ----
   const [open, setOpen] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
@@ -349,6 +358,25 @@ export default function ShuttleForge() {
             <RangeButton label="Next 30 days" active={range === "30d"} onClick={() => setRange("30d")} />
           </div>
         </header>
+
+        {/* Driver Assignment Warning */}
+        {unassignedVehicles > 0 && (
+          <div className="bg-red-600 text-white p-4 rounded-2xl border-2 border-red-700">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🚨</div>
+              <div>
+                <div className="font-bold text-lg">DRIVER SHORTAGE ALERT</div>
+                <div className="text-red-100">
+                  {unassignedVehicles} vehicles scheduled without drivers! 
+                  Only 8 drivers available (D1-D8) for {rowsInRange.length} vehicles.
+                </div>
+                <div className="text-red-200 text-sm mt-1">
+                  ⚠️ This must be addressed immediately - vehicles cannot be moved without drivers!
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Route selector */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -469,7 +497,7 @@ export default function ShuttleForge() {
                                       </div>
                                       <div>
                                         <span className="text-slate-500">Driver:</span>
-                                        <div className="text-slate-400">Unassigned</div>
+                                        <div className="font-medium text-blue-600">{r.driver}</div>
                                       </div>
                                     </div>
                                   )}

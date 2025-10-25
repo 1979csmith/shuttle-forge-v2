@@ -1011,14 +1011,18 @@ function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpd
       className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow cursor-pointer select-none transition-all"
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="font-semibold">{r.job.customer}</div>
-          <div className="text-xs text-slate-600">Car {r.carIndex+1}</div>
-          <div className="text-xs text-slate-600">
-            Put‑in {fmt(r.job.putIn)} @ {r.job.putInLocation} • Take‑out {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="font-semibold text-slate-900">{r.job.customer}</div>
+            <div className="text-xs text-slate-500">• Car {r.carIndex+1}</div>
+          </div>
+          <div className="text-xs text-slate-600 space-y-0.5">
+            <div>📍 Put-in: {r.job.putInLocation} ({fmt(r.job.putIn)})</div>
+            <div>📍 Take-out: {r.job.takeOutLocation} ({fmt(r.job.takeOut)})</div>
+            <div>👤 Driver: <span className="font-medium text-blue-600">{r.driver}</span></div>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs border ${pillCls}`}>{risk.pill}</span>
+        <span className={`px-2 py-1 rounded-full text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>
       </div>
       
       {isExpanded && (

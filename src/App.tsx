@@ -751,15 +751,38 @@ export default function ShuttleForge() {
               </div>
             </div>
             
+            {(() => {
+              const dayUtil = util30.find(d => d.iso === selectedDay);
+              const isOverbooked = dayUtil && dayUtil.used > 7;
+              if (isOverbooked) {
+                return (
+                  <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🚨</span>
+                      <div className="font-bold text-red-800">OVERBOOKED DAY</div>
+                    </div>
+                    <div className="text-red-700">
+                      <div className="font-semibold">Capacity: 7 vehicles | Scheduled: {dayUtil?.used} vehicles</div>
+                      <div className="text-sm">Over by {dayUtil ? dayUtil.used - 7 : 0} vehicles - {dayUtil ? dayUtil.used - 7 : 0} vehicles need to be moved</div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             <div className="grid gap-3 mb-4">
-              {getVehiclesForDay(selectedDay).map((r) => {
+              {getVehiclesForDay(selectedDay).map((r, index) => {
                 const vehicle = r.job.vehicles[r.carIndex];
                 const cardId = `${r.job.id}-${r.carIndex}`;
                 const isExpanded = expandedCards.has(cardId);
                 const needsMove = r.risk.level === 'red' || r.risk.level === 'orange';
+                const dayUtil = util30.find(d => d.iso === selectedDay);
+                const isOverbooked = dayUtil && dayUtil.used > 7 && index >= 7;
                 
                 return (
                   <div key={cardId} className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                    isOverbooked ? 'border-red-300 bg-red-100 hover:bg-red-200' :
                     r.risk.level === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
                     r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
                     'border-slate-200 bg-white hover:bg-slate-50'
@@ -774,16 +797,20 @@ export default function ShuttleForge() {
                   }}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                          isOverbooked ? 'bg-red-200 text-red-800' : 'bg-blue-100 text-blue-700'
+                        }`}>
                           {r.carIndex + 1}
                         </div>
                         <div>
                           <div className="font-medium text-slate-900 text-sm">{vehicle.owner}</div>
                           <div className="text-xs text-slate-500">{vehicle.year} {vehicle.make} {vehicle.model}</div>
+                          {isOverbooked && <div className="text-xs text-red-600 font-medium">OVERBOOKED</div>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {needsMove && <span className="text-red-500 text-xs">⚠️</span>}
+                        {isOverbooked && <span className="text-red-600 text-xs font-bold">🚨 OVER</span>}
+                        {needsMove && !isOverbooked && <span className="text-red-500 text-xs">⚠️</span>}
                         <RiskPill level={r.risk.level} label={r.risk.label} />
                       </div>
                     </div>
@@ -810,6 +837,12 @@ export default function ShuttleForge() {
                             <div>{fmt(r.job.takeOut)}</div>
                           </div>
                         </div>
+                        {isOverbooked && (
+                          <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-red-800">
+                            <div className="font-semibold">⚠️ This vehicle is causing the overbook situation</div>
+                            <div className="text-xs">Day capacity: 7 vehicles, but {dayUtil?.used} are scheduled</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

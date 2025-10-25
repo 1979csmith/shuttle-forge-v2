@@ -67,15 +67,34 @@ function enumerateDays(startISO: string, endISO: string): string[] {
   return days;
 }
 
-// --- Risk helpers ---
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-function isoToday() {
-  return new Date().toISOString().slice(0, 10);
-}
-function diffDays(aISO: string, bISO: string) {
-  const a = new Date(aISO).setHours(0,0,0,0);
-  const b = new Date(bISO).setHours(0,0,0,0);
-  return Math.round((a - b) / MS_PER_DAY);
+// --- Simple Risk (traffic‑light) ---
+// Red = urgent (trip ends today or already ended, not yet delivered)
+// Orange = deliver today (D‑1)
+// Green = good (scheduled early or already delivered)
+
+function isoToday() { return new Date().toISOString().slice(0, 10); }
+
+function simpleRisk(r: CarRow): { level: 'red'|'orange'|'green'; label: string } {
+  const today = isoToday();
+  const d1 = addDaysISO(r.job.takeOut, -1);
+
+  // already delivered in the past
+  if (r.deliveryISO < today) return { level: 'green', label: 'Delivered' };
+
+  // trip ends today or earlier and delivery is not in the past
+  if (r.job.takeOut <= today) return { level: 'red', label: 'Urgent' };
+
+  // must deliver today (D‑1)
+  if (today === d1 && r.deliveryISO === d1) return { level: 'orange', label: 'Deliver Today' };
+
+  // scheduled earlier than D‑1 (good planning)
+  if (r.deliveryISO < d1) return { level: 'green', label: 'Scheduled Early' };
+
+  // scheduled on a future D‑1 (still fine / on time)
+  if (r.deliveryISO === d1) return { level: 'green', label: 'On Time (D‑1)' };
+
+  // fallback (shouldn't happen with our scheduler)
+  return { level: 'green', label: 'Ready' };
 }
 
 function pickStatus(i: number): Job["status"] {
@@ -171,51 +190,15 @@ export default function ShuttleForge() {
   // Filter rows by DELIVERY window
   const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO]);
 
-  // Risk level per car (no driver logic; purely date/assignment‑based)
-  // Levels: 'red' (critical), 'orange' (caution), 'green' (good)
-  type RiskInfo = { level: 'red' | 'orange' | 'green'; label: string };
-  function riskFor(r: CarRow): RiskInfo {
-    const today = isoToday();
-    const dToTakeout = diffDays(r.job.takeOut, today); // 0 = take‑out is today
-    const d1 = addDaysISO(r.job.takeOut, -1);
-    const delivered = r.deliveryISO < today; // delivered earlier than today
+  const enriched = useMemo(() => rowsInRange.map(r => ({ ...r, risk: simpleRisk(r) })), [rowsInRange]);
 
-    if (delivered) return { level: 'green', label: 'Delivered' };
-
-    if (dToTakeout <= 0) {
-      // Trip ends today or already ended and car not delivered yet
-      return { level: 'red', label: dToTakeout === 0 ? 'Trip ends today' : 'Trip ended' };
-    }
-
-    if (r.deliveryISO === d1) {
-      // Scheduled on D‑1
-      return dToTakeout === 1
-        ? { level: 'orange', label: 'Deliver today (D‑1)' }
-        : { level: 'green', label: 'On time (D‑1)' };
-    }
-
-    if (r.deliveryISO < d1) {
-      // Pulled forward to an earlier day than D‑1
-      const daysEarly = diffDays(d1, r.deliveryISO);
-      return { level: 'green', label: `Pulled forward (D‑${daysEarly})` };
-    }
-
-    // Fallback (shouldn't happen with our scheduler)
-    return { level: 'orange', label: 'Needs scheduling' };
-  }
-
-  // Enrich rows with risk and sort most‑critical first
-  const rowsEnriched = useMemo(() => {
-    return rowsInRange
-      .map((r) => ({ ...r, risk: riskFor(r) }))
-      .sort((a, b) => {
-        const order = { red: 0, orange: 1, green: 2 } as const;
-        if (order[a.risk.level] !== order[b.risk.level]) return order[a.risk.level] - order[b.risk.level];
-        // then sooner take‑out first, then customer
-        if (a.job.takeOut !== b.job.takeOut) return a.job.takeOut.localeCompare(b.job.takeOut);
-        return a.job.customer.localeCompare(b.job.customer);
-      });
-  }, [rowsInRange]);
+  // Group by delivery day (ISO)
+  const groups = useMemo(() => {
+    const map: Record<string, (typeof enriched)[number][]> = {};
+    for (const r of enriched) (map[r.deliveryISO] ||= []).push(r);
+    const keys = Object.keys(map).sort();
+    return keys.map(k => ({ iso: k, rows: map[k] }));
+  }, [enriched]);
 
   // Metrics
   const metrics = useMemo(() => {
@@ -338,50 +321,62 @@ export default function ShuttleForge() {
               </button>
             </div>
 
-            {/* Jobs list */}
+            {/* Deliveries by day */}
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-700">
-                  <tr>
-                    <Th>Customer</Th>
-                    <Th>Put-in</Th>
-                    <Th>Take-out</Th>
-                    <Th>Delivery</Th>
-                    <Th>Car</Th>
-                    <Th>Status</Th>
-                    <Th>Risk</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rowsEnriched.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="text-center py-10 text-slate-500">No deliveries in range.</td>
-                    </tr>
-                  )}
-                  {rowsEnriched.map((r) => (
-                    <tr
-                      key={`${r.job.id}-${r.carIndex}`}
-                      className={`border-t ${
-                        r.risk.level === 'red' ? 'bg-red-50/40' : r.risk.level === 'orange' ? 'bg-orange-50/40' : ''
-                      }`}
-                    >
-                      <td className="px-3 py-1">{r.job.customer}</td>
-                      <td className="px-3 py-1">{fmt(r.job.putIn)}</td>
-                      <td className="px-3 py-1">{fmt(r.job.takeOut)}</td>
-                      <td className="px-3 py-1">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</td>
-                      <td className="px-3 py-1">Car {r.carIndex + 1}</td>
-                      <td className="px-3 py-1">
-                        <span className={`px-2 py-1 rounded-full text-xs border ${
-                          r.job.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                          r.job.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          r.job.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          'bg-slate-50 text-slate-700 border-slate-200'}`}>{r.job.status}</span>
-                      </td>
-                      <td className="px-3 py-1"><RiskBadge level={r.risk.level} label={r.risk.label} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {(() => {
+                if (groups.length === 0) return <div className="p-6 text-center text-slate-500">No deliveries scheduled.</div>;
+                return (
+                  <>
+                    {groups.map(({ iso, rows }, idx) => {
+                      // decide header state
+                      const today = isoToday();
+                      const anyUrgent = rows.some(r => r.risk.level === 'red');
+                      const isTodayD1 = today === addDaysISO(rows[0].job.takeOut, -1) && rows.some(r => r.deliveryISO === today);
+                      const state: 'good'|'today'|'urgent' = anyUrgent ? 'urgent' : isTodayD1 ? 'today' : 'good';
+
+                      return (
+                        <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
+                          <DayHeader iso={iso} count={rows.length} state={state} />
+                          <table className="w-full text-sm">
+                            <thead className="text-slate-700">
+                              <tr>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Customer</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Put‑in</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Take‑out</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Delivery (this day)</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Car</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Status</th>
+                                <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">Risk</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((r) => (
+                                <tr key={`${r.job.id}-${r.carIndex}`} className={`border-t ${
+                                  r.risk.level === 'red' ? 'bg-red-50/40' : r.risk.level === 'orange' ? 'bg-orange-50/40' : ''
+                                }`}>
+                                  <td className="px-3 py-1">{r.job.customer}</td>
+                                  <td className="px-3 py-1">{fmt(r.job.putIn)}</td>
+                                  <td className="px-3 py-1">{fmt(r.job.takeOut)}</td>
+                                  <td className="px-3 py-1">{fmt(r.deliveryISO)} {r.overflow && <span className="ml-2 text-amber-700 text-xs">⚠️ overflow</span>}</td>
+                                  <td className="px-3 py-1">Car {r.carIndex + 1}</td>
+                                  <td className="px-3 py-1">
+                                    <span className={`px-2 py-1 rounded-full text-xs border ${
+                                      r.job.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                      r.job.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                      r.job.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                      'bg-slate-50 text-slate-700 border-slate-200'}`}>{r.job.status}</span>
+                                  </td>
+                                  <td className="px-3 py-1"><RiskPill level={r.risk.level} label={r.risk.label} /></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -410,20 +405,18 @@ export default function ShuttleForge() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-semibold mb-2">Escalating Alerts</h4>
               {(() => {
-                const d1List = rowsEnriched.filter(r => r.risk.label.startsWith('Deliver today'));
-                const dueToday = rowsEnriched.filter(r => r.risk.label.includes('Trip ends today'));
-                const overdue = rowsEnriched.filter(r => r.risk.label.includes('Trip ended'));
+                const d1List = enriched.filter(r => r.risk.label.startsWith('Deliver Today'));
+                const urgent = enriched.filter(r => r.risk.label === 'Urgent');
 
                 return (
                   <div className="space-y-3 text-sm">
                     <div>
                       <div className="font-semibold">🔴 Critical</div>
-                      {overdue.length === 0 && dueToday.length === 0 ? (
+                      {urgent.length === 0 ? (
                         <div className="text-slate-500 text-xs">No critical items.</div>
                       ) : (
                         <ul className="list-disc pl-4">
-                          {overdue.map(r => (<li key={`o-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
-                          {dueToday.map(r => (<li key={`t-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
+                          {urgent.map(r => (<li key={`u-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
                         </ul>
                       )}
                     </div>
@@ -571,18 +564,26 @@ function RangeButton({ label, active, onClick }: { label: string; active: boolea
   );
 }
 
-function RiskBadge({ level, label }: { level: 'red' | 'orange' | 'green'; label: string }) {
-  const cls = level === 'red'
-    ? 'bg-red-50 text-red-700 border-red-200'
-    : level === 'orange'
-    ? 'bg-orange-50 text-orange-700 border-orange-200'
+function DayHeader({ iso, count, state }: { iso: string; count: number; state: 'good'|'today'|'urgent' }) {
+  const color = state === 'urgent' ? 'bg-red-50 border-red-200 text-red-800'
+    : state === 'today' ? 'bg-orange-50 border-orange-200 text-orange-800'
+    : 'bg-emerald-50 border-emerald-200 text-emerald-800';
+  const label = state === 'urgent' ? 'URGENT' : state === 'today' ? 'DELIVER TODAY' : 'ALL GOOD';
+  return (
+    <div className={`px-4 py-2 flex items-center justify-between border ${color}`}>
+      <div className="font-semibold text-sm">{fmt(iso)} — Deliveries</div>
+      <div className="text-xs font-semibold">{count} cars • {label}</div>
+    </div>
+  );
+}
+
+function RiskPill({ level, label }: { level: 'red'|'orange'|'green'; label: string }) {
+  const cls = level === 'red' ? 'bg-red-50 text-red-700 border-red-200'
+    : level === 'orange' ? 'bg-orange-50 text-orange-700 border-orange-200'
     : 'bg-emerald-50 text-emerald-700 border-emerald-200';
   return <span className={`px-2 py-1 rounded-full text-xs border ${cls}`}>{label}</span>;
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">{children}</th>;
-}
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="text-slate-700 self-center">{children}</label>;
 }

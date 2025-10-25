@@ -119,7 +119,7 @@ function vanDriversNeeded(totalCars: number) {
 // ---------- UI ----------
 export default function ShuttleForge() {
   const demoSeed = useMemo(() => buildDemoJobs(14), []);
-  const [jobs] = useState<Job[]>(demoSeed);
+  const [jobs, setJobs] = useState<Job[]>(demoSeed);
   const [selectedRoute, setSelectedRoute] = useState<string | null>("Main Salmon");
   const [range, setRange] = useState<"3d" | "7d" | "30d">("7d");
 
@@ -218,11 +218,19 @@ export default function ShuttleForge() {
   }, [rowsInRange]);
 
   // Metrics
-  const metrics = useMemo(() => ({
-    totalDeliveries: rowsInRange.length,
-    driverCapacity: { available: 7, max: 7 },
-    neededVanDrivers: rowsInRange.length > 0 ? 1 : 0,
-  }), [rowsInRange]);
+  const metrics = useMemo(() => {
+    const totalCars = rowsInRange.length;
+    const driverCapacity = { available: 7, max: 7 };
+    const neededVanDrivers = vanDriversNeeded(totalCars);
+    const overbooked = totalCars > driverCapacity.available;
+    return { 
+      totalDeliveries: rowsInRange.length,
+      totalCars,
+      driverCapacity, 
+      neededVanDrivers, 
+      overbooked 
+    };
+  }, [rowsInRange]);
 
   // Integrity checks
   const jobToScheduledCount = useMemo(() => {
@@ -236,8 +244,6 @@ export default function ShuttleForge() {
     for (const j of visibleJobs) { const s = jobToScheduledCount[j.id] || 0; if (s !== j.cars) issues.push({ job: j, expected: j.cars, scheduled: s }); }
     return issues;
   }, [visibleJobs, jobToScheduledCount]);
-
-  const atRiskRows = useMemo(() => scheduledRows.filter(r => r.overflow), [scheduledRows]);
 
   const util30 = useMemo(() => {
     const days: { iso: string; used: number }[] = [];
@@ -263,7 +269,7 @@ export default function ShuttleForge() {
   function addJob() {
     if (!draft.customer) return;
     const id = `J-${Math.floor(1000 + Math.random() * 9000)}`;
-    setJobs((prev) => [...prev, { ...draft, id }]);
+    setJobs((prev: Job[]) => [...prev, { ...draft, id }]);
     setOpen(false);
     // reset
     setDraft({
@@ -404,7 +410,6 @@ export default function ShuttleForge() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-semibold mb-2">Escalating Alerts</h4>
               {(() => {
-                const today = isoToday();
                 const d1List = rowsEnriched.filter(r => r.risk.label.startsWith('Deliver today'));
                 const dueToday = rowsEnriched.filter(r => r.risk.label.includes('Trip ends today'));
                 const overdue = rowsEnriched.filter(r => r.risk.label.includes('Trip ended'));
@@ -577,9 +582,6 @@ function RiskBadge({ level, label }: { level: 'red' | 'orange' | 'green'; label:
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="text-left font-semibold px-3 py-2 border-t border-b border-slate-200">{children}</th>;
-}
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>;
 }
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="text-slate-700 self-center">{children}</label>;

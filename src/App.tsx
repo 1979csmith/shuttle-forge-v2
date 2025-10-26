@@ -192,12 +192,12 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:30", driverId: "D3" },
         ],
       },
-      // Single-leg OK
+      // Single-leg OK (no leg designation needed)
       {
         id: "J-2001",
         car: { owner: "Solo", makeModel: "Chevy Tahoe", plate: "OR-9XY123" },
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Hammer Creek", date: "2025-10-28", depart: "08:00", arrive: "12:15", driverId: "D1" },
+          { startLocation: "Corn Creek", endLocation: "Hammer Creek", date: "2025-10-28", depart: "08:00", arrive: "12:15", driverId: "D1" },
         ],
       },
       // Two-leg: bad (same-day B + missing driver on B) -> error + warn
@@ -215,12 +215,12 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
     currentDate: TODAY,
     drivers: DEMO_DRIVERS,
     jobs: [
-      // Single-leg example (common on some routes)
+      // Single-leg example (common on some routes) - no leg designation needed
       {
         id: "MF-42",
         car: { owner: "Johnson", makeModel: "Jeep Grand Cherokee", plate: "ID-3A009X" },
         legs: [
-          { leg: "A", startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
       },
     ],

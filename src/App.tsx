@@ -1017,10 +1017,16 @@ function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpd
             <div className="font-semibold text-sm text-slate-900 truncate">{r.job.customer}</div>
             <div className="text-xs text-slate-400">#{r.carIndex+1}</div>
           </div>
-          <div className="text-xs text-slate-600 leading-tight">
-            <span className="inline-block mr-2">📍 {r.job.putInLocation}</span>
-            <span className="inline-block mr-2">→ {r.job.takeOutLocation}</span>
-            <span className="inline-block text-blue-600 font-medium">👤 {r.driver}</span>
+          <div className="text-xs text-slate-600 leading-tight space-y-0.5">
+            <div>
+              <span className="inline-block mr-2">🚀 Launch: {fmt(r.job.putIn)} @ {r.job.putInLocation}</span>
+            </div>
+            <div>
+              <span className="inline-block mr-2">🏁 Take-out: {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}</span>
+            </div>
+            <div>
+              <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
+            </div>
           </div>
         </div>
         <span className={`px-1.5 py-0.5 rounded text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>

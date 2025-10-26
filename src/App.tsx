@@ -359,7 +359,11 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
                     {job.legs.map((L, idx) => (
                       <div key={idx} className="rounded border px-2 py-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">Leg {L.leg || "?"}</span>
+                          {job.legs.length > 1 ? (
+                            <span className="font-medium">Leg {L.leg || "?"}</span>
+                          ) : (
+                            <span className="font-medium">Route</span>
+                          )}
                           {pillFor(L)}
                         </div>
                         <div className="text-xs text-slate-700">{L.startLocation} <span className="mx-1">&rarr;</span> {L.endLocation}</div>
@@ -428,7 +432,7 @@ function TimelineMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string 
                   <div
                     className={`absolute top-1 h-6 rounded border ${clsA}`}
                     style={barStyle(aX)}
-                    title={"Leg " + (first.leg || "?") + ": " + first.startLocation + " to " + first.endLocation + " on " + first.date}
+                    title={(job.legs.length > 1 ? "Leg " + (first.leg || "?") + ": " : "") + first.startLocation + " to " + first.endLocation + " on " + first.date}
                   ></div>
                   {second && bX !== null && (
                     <div

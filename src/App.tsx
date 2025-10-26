@@ -195,12 +195,16 @@ function buildDemoJobs(days = 10): Job[] {
   for (let d = 0; d < days; d++) {
     const putIn = isoDaysFromNow(d);
     for (const route of ROUTES) {
-      const perDay = 3 + ((d + route.length) % 3); // 3–5 jobs
+      // Main Salmon: more jobs, fewer cars per job
+      // Middle Fork: fewer jobs, more cars per job, more pending
+      const isMainSalmon = route === "Main Salmon";
+      const perDay = isMainSalmon ? (2 + (d % 4)) : (1 + (d % 3)); // Main: 2-5, Middle: 1-3
+      
       for (let k = 0; k < perDay; k++) {
         const id = `J-${++idCounter}`;
-        const cars = 1 + ((idCounter + k) % 5); // 1–5 cars
+        const cars = isMainSalmon ? (1 + ((idCounter + k) % 3)) : (2 + ((idCounter + k) % 4)); // Main: 1-3, Middle: 2-5
         const customer = CUSTOMERS[(idCounter + k) % CUSTOMERS.length];
-        const status = pickStatus(idCounter + k);
+        const status = isMainSalmon ? pickStatus(idCounter + k) : (k < 1 ? "Pending" : pickStatus(idCounter + k)); // Middle Fork has more pending
         const duration = 5 + ((idCounter + k) % 3); // 5–7 days
         const putInLocation = PUT_IN_LOCATIONS[(idCounter + k) % PUT_IN_LOCATIONS.length];
         const takeOutLocation = TAKE_OUT_LOCATIONS[(idCounter + k) % TAKE_OUT_LOCATIONS.length];

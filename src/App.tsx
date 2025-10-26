@@ -321,17 +321,7 @@ export default function RouteDispatchPage() {
 /* ---------------- List View ---------------- */
 
 function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
-  // group by earliest leg date
-  const groups = useMemo(() => {
-    const map = new Map<string, Job[]>();
-    for (const j of jobs) {
-      const d = j.legs[0].date;
-      const arr = map.get(d) || [];
-      arr.push(j);
-      map.set(d, arr);
-    }
-    return Array.from(map.entries()).sort((a, b) => a[0] < b[0] ? -1 : 1);
-  }, [jobs]);
+  const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
 
   function pillFor(leg: Leg) {
     const days = daysBetween(currentDate, leg.date);
@@ -340,44 +330,116 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
     return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${cls}`}>{label}</span>;
   }
 
+  function toggleExpand(jobId: string) {
+    const newExpanded = new Set(expandedJobs);
+    if (newExpanded.has(jobId)) {
+      newExpanded.delete(jobId);
+    } else {
+      newExpanded.add(jobId);
+    }
+    setExpandedJobs(newExpanded);
+  }
+
+  // Get most urgent leg for overall urgency
+  function getMostUrgentLeg(job: Job) {
+    return job.legs.reduce((mostUrgent, leg) => {
+      const days = daysBetween(currentDate, leg.date);
+      const mostUrgentDays = daysBetween(currentDate, mostUrgent.date);
+      return days < mostUrgentDays ? leg : mostUrgent;
+    }, job.legs[0]);
+  }
+
   return (
-    <div className="space-y-6">
-      {groups.map(([dateISO, arr]) => (
-        <div key={dateISO} className="rounded-2xl border bg-white">
-          <div className="flex items-center justify-between p-3 border-b">
-            <div className="font-semibold">{dateISO} — Deliveries</div>
-            <div className="text-xs text-slate-600">{arr.length} jobs</div>
-          </div>
-          <div className="divide-y">
-            {arr.map(job => (
-              <div key={job.id} className="p-3 flex items-center gap-3">
-                <div className="shrink-0 h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-medium">{job.car.owner.charAt(0)}</div>
-                <div className="flex-1">
-                  <div className="font-semibold">{jobNumber(job)}</div>
-                  <div className="text-xs text-slate-600">{job.car.makeModel} • Plate: {job.car.plate}</div>
-                  <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    {job.legs.map((L, idx) => (
-                      <div key={idx} className="rounded border px-2 py-1">
-                        <div className="flex items-center justify-between">
-                          {job.legs.length > 1 ? (
-                            <span className="font-medium">Leg {L.leg || "?"}</span>
-                          ) : (
-                            <span className="font-medium">Route</span>
-                          )}
-                          {pillFor(L)}
-                        </div>
-                        <div className="text-xs text-slate-700">{L.startLocation} <span className="mx-1">&rarr;</span> {L.endLocation}</div>
-                        <div className="text-xs text-slate-700">{L.date} {L.depart} - {L.arrive}</div>
-                        <div className="text-xs text-slate-700">Driver: {L.driverId || "Unassigned"}</div>
-                      </div>
-                    ))}
+    <div className="space-y-3">
+      {jobs.map(job => {
+        const isExpanded = expandedJobs.has(job.id);
+        const mostUrgentLeg = getMostUrgentLeg(job);
+        const urgentDays = daysBetween(currentDate, mostUrgentLeg.date);
+        const cardBgClass = urgentDays <= 0 ? 'bg-red-50 border-red-200' : 
+                           urgentDays <= 3 ? 'bg-amber-50 border-amber-200' : 
+                           'bg-white border-slate-200';
+
+        return (
+          <div 
+            key={job.id} 
+            className={`rounded-xl border-2 ${cardBgClass} p-4 cursor-pointer hover:shadow-md transition-all`}
+            onClick={() => toggleExpand(job.id)}
+          >
+            {/* Collapsed View */}
+            <div className="flex items-center gap-4">
+              {/* Vehicle Avatar */}
+              <div className="shrink-0 h-14 w-14 rounded-lg bg-slate-700 text-white flex items-center justify-center text-lg font-bold">
+                {job.car.owner.charAt(0)}
+              </div>
+
+              {/* Vehicle Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="font-bold text-lg">{job.car.owner}</div>
+                  {pillFor(mostUrgentLeg)}
+                </div>
+                <div className="text-sm text-slate-700">
+                  <span className="font-medium">{job.car.makeModel}</span>
+                  <span className="mx-2">•</span>
+                  <span className="font-mono">{job.car.plate}</span>
+                </div>
+                {!isExpanded && (
+                  <div className="text-xs text-slate-600 mt-1">
+                    {job.legs.length === 1 ? 'Single delivery' : `${job.legs.length} legs`} • Click to expand
                   </div>
+                )}
+              </div>
+
+              {/* Expand Icon */}
+              <div className="shrink-0 text-slate-400">
+                {isExpanded ? '▼' : '▶'}
+              </div>
+            </div>
+
+            {/* Expanded View */}
+            {isExpanded && (
+              <div className="mt-4 pt-4 border-t border-slate-300 space-y-3" onClick={(e) => e.stopPropagation()}>
+                {/* Job Number */}
+                <div className="text-sm text-slate-600">
+                  Job #: <span className="font-mono font-medium">{jobNumber(job)}</span>
+                </div>
+
+                {/* Legs */}
+                <div className="space-y-2">
+                  {job.legs.map((leg, idx) => (
+                    <div key={idx} className="rounded-lg border border-slate-300 bg-white p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-sm">
+                          {job.legs.length > 1 ? `Leg ${leg.leg || '?'}` : 'Delivery'}
+                        </span>
+                        {pillFor(leg)}
+                      </div>
+                      <div className="space-y-1 text-xs text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500">Route:</span>
+                          <span className="font-medium">{leg.startLocation} → {leg.endLocation}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500">Date:</span>
+                          <span className="font-medium">{leg.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500">Time:</span>
+                          <span>{leg.depart} - {leg.arrive}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500">Driver:</span>
+                          <span className="font-medium text-blue-600">{leg.driverId || 'Unassigned'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -1071,19 +1071,24 @@ function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpd
           <div className="flex items-center gap-1.5 mb-0.5">
             <div className="font-semibold text-sm text-slate-900 truncate">{r.job.customer}</div>
             <div className="text-xs text-slate-400">#{r.carIndex+1}</div>
+            {r.leg && (
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                r.leg === 'A' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-green-100 text-green-700 border border-green-300'
+              }`}>
+                LEG {r.leg}
+              </span>
+            )}
           </div>
           <div className="text-xs text-slate-600 leading-tight space-y-0.5">
             {r.leg ? (
               // Main Salmon Two-Leg System
               <>
-                <div className="font-semibold text-purple-700">
-                  Leg {r.leg}: {r.leg === 'A' ? `${r.job.putInLocation} → ${r.job.handoffLocation}` : `${r.job.handoffLocation} → ${r.job.takeOutLocation}`}
+                <div className="font-medium">
+                  {r.leg === 'A' ? '🚀' : '🏁'} {r.leg === 'A' ? `${r.job.putInLocation} → ${r.job.handoffLocation}` : `${r.job.handoffLocation} → ${r.job.takeOutLocation}`}
                 </div>
                 <div>
-                  <span className="inline-block mr-2">📅 Shuttle: {fmt(r.legDate || r.deliveryISO)}</span>
-                </div>
-                <div>
-                  <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
+                  <span className="inline-block mr-2">📅 {fmt(r.legDate || r.deliveryISO)}</span>
+                  <span className="inline-block text-blue-600 font-medium">👤 {r.driver}</span>
                 </div>
               </>
             ) : (

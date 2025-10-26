@@ -299,8 +299,9 @@ export default function ShuttleForge() {
     });
   }, [visibleJobs, setTick]);
 
-  // Filter rows by DELIVERY window
-  const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO]);
+  // Filter rows by DELIVERY window - only show vehicles that need to be moved (today or future)
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= today && r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO, today]);
 
   const enriched = useMemo(() => rowsInRange.map(r => ({ ...r, risk: simpleRisk(r) })), [rowsInRange]);
 

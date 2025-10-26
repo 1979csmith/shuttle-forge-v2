@@ -22,6 +22,7 @@ type Job = {
   takeOut: string; // ISO date
   putInLocation: string;
   takeOutLocation: string;
+  handoffLocation?: string; // For Main Salmon two-leg system
   cars: number; // number of vehicles
   customer: string;
   status: "Pending" | "Accepted" | "In Progress" | "Completed";
@@ -35,6 +36,8 @@ type CarRow = {
   pulledForward: boolean;
   overflow: boolean;
   driver: string;
+  leg?: 'A' | 'B'; // For Main Salmon two-leg system
+  legDate?: string; // Date for this specific leg
 };
 
 const ROUTES = ["Main Salmon", "Middle Fork"] as const;
@@ -51,6 +54,7 @@ const CUSTOMERS = [
 
 const PUT_IN_LOCATIONS = ["Boundary Creek", "Corn Creek", "Indian Creek", "Salmon River Lodge"];
 const TAKE_OUT_LOCATIONS = ["Cash Bar", "Vinegar Creek", "Carey Creek", "Long Tom Bar"];
+const HANDOFF_LOCATION = "Stanley Shuttle Yard"; // Main Salmon two-leg handoff point
 
 const VEHICLE_MAKES = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi"];
 const VEHICLE_MODELS = ["Camry", "F-150", "Civic", "Silverado", "Altima", "X3", "C-Class", "A4"];
@@ -208,6 +212,7 @@ function buildDemoJobs(days = 10): Job[] {
         const duration = 5 + ((idCounter + k) % 3); // 5–7 days
         const putInLocation = PUT_IN_LOCATIONS[(idCounter + k) % PUT_IN_LOCATIONS.length];
         const takeOutLocation = TAKE_OUT_LOCATIONS[(idCounter + k) % TAKE_OUT_LOCATIONS.length];
+        const handoffLocation = isMainSalmon ? HANDOFF_LOCATION : undefined; // Two-leg system for Main Salmon
         
         // Generate vehicles for this job
         const vehicles: Vehicle[] = [];
@@ -215,7 +220,7 @@ function buildDemoJobs(days = 10): Job[] {
           vehicles.push(generateVehicle(idCounter + k + v));
         }
         
-        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), putInLocation, takeOutLocation, cars, customer, status, vehicles });
+        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), putInLocation, takeOutLocation, handoffLocation, cars, customer, status, vehicles });
       }
     }
   }
@@ -265,6 +270,8 @@ export default function ShuttleForge() {
   function forceRefresh(){ setTick(t => t+1); }
 
   // Each car becomes a scheduled delivery row
+  // Main Salmon: TWO legs (A: Launch→Stanley, B: Stanley→Takeout)
+  // Middle Fork: Single leg
   // Prefer earliest available day within [putIn+1 .. takeOut-1]; cap 7/day, overflow to D-1 if needed
   const scheduledRows: CarRow[] = useMemo(() => {
     const rows: CarRow[] = [];
@@ -272,21 +279,63 @@ export default function ShuttleForge() {
     const jobsSorted = [...visibleJobs].sort((a,b) => a.takeOut === b.takeOut ? a.putIn.localeCompare(b.putIn) : a.takeOut.localeCompare(b.takeOut));
 
     for (const job of jobsSorted) {
-      const start = addDaysISO(job.putIn, 1);
-      const end = addDaysISO(job.takeOut, -1);
-      const eligible = enumerateDays(start, end);
-      for (let ci = 0; ci < job.cars; ci++) {
-        let assigned: string | null = null;
-        for (const day of eligible) {
-          const used = usage[day] || 0;
-          if (used < 7) { usage[day] = used + 1; assigned = day; break; }
+      const isMainSalmon = job.route === "Main Salmon";
+      
+      if (isMainSalmon && job.handoffLocation) {
+        // TWO-LEG SYSTEM for Main Salmon
+        // Leg A: putIn → handoff (day after put-in)
+        // Leg B: handoff → takeOut (day before take-out)
+        const legADate = addDaysISO(job.putIn, 1); // Day after launch
+        const legBDate = addDaysISO(job.takeOut, -1); // Day before take-out
+        
+        for (let ci = 0; ci < job.cars; ci++) {
+          const driverA = DRIVERS[rows.length % DRIVERS.length];
+          const driverB = DRIVERS[(rows.length + 1) % DRIVERS.length];
+          
+          // Leg A
+          usage[legADate] = (usage[legADate] || 0) + 1;
+          rows.push({ 
+            job, 
+            carIndex: ci, 
+            deliveryISO: legADate, 
+            pulledForward: false, 
+            overflow: (usage[legADate] || 0) > 7, 
+            driver: driverA,
+            leg: 'A',
+            legDate: legADate
+          });
+          
+          // Leg B
+          usage[legBDate] = (usage[legBDate] || 0) + 1;
+          rows.push({ 
+            job, 
+            carIndex: ci, 
+            deliveryISO: legBDate, 
+            pulledForward: false, 
+            overflow: (usage[legBDate] || 0) > 7, 
+            driver: driverB,
+            leg: 'B',
+            legDate: legBDate
+          });
         }
-        if (!assigned) {
-          const d1 = addDaysISO(job.takeOut, -1);
-          usage[d1] = (usage[d1] || 0) + 1;
-          rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true, driver: DRIVERS[rows.length % DRIVERS.length] });
-        } else {
-          rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false, driver: DRIVERS[rows.length % DRIVERS.length] });
+      } else {
+        // SINGLE-LEG SYSTEM for Middle Fork
+        const start = addDaysISO(job.putIn, 1);
+        const end = addDaysISO(job.takeOut, -1);
+        const eligible = enumerateDays(start, end);
+        for (let ci = 0; ci < job.cars; ci++) {
+          let assigned: string | null = null;
+          for (const day of eligible) {
+            const used = usage[day] || 0;
+            if (used < 7) { usage[day] = used + 1; assigned = day; break; }
+          }
+          if (!assigned) {
+            const d1 = addDaysISO(job.takeOut, -1);
+            usage[d1] = (usage[d1] || 0) + 1;
+            rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true, driver: DRIVERS[rows.length % DRIVERS.length] });
+          } else {
+            rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false, driver: DRIVERS[rows.length % DRIVERS.length] });
+          }
         }
       }
     }
@@ -448,6 +497,7 @@ export default function ShuttleForge() {
     takeOut: isoDaysFromNow(3),
     putInLocation: PUT_IN_LOCATIONS[0],
     takeOutLocation: TAKE_OUT_LOCATIONS[0],
+    handoffLocation: selectedRoute === "Main Salmon" ? HANDOFF_LOCATION : undefined,
     cars: 1,
     customer: "",
     status: "Pending",
@@ -467,6 +517,7 @@ export default function ShuttleForge() {
       takeOut: isoDaysFromNow(3),
       putInLocation: PUT_IN_LOCATIONS[0],
       takeOutLocation: TAKE_OUT_LOCATIONS[0],
+      handoffLocation: selectedRoute === "Main Salmon" ? HANDOFF_LOCATION : undefined,
       cars: 1,
       customer: "",
       status: "Pending",
@@ -1022,15 +1073,33 @@ function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpd
             <div className="text-xs text-slate-400">#{r.carIndex+1}</div>
           </div>
           <div className="text-xs text-slate-600 leading-tight space-y-0.5">
-            <div>
-              <span className="inline-block mr-2">🚀 Launch: {fmt(r.job.putIn)} @ {r.job.putInLocation}</span>
-            </div>
-            <div>
-              <span className="inline-block mr-2">🏁 Take-out: {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}</span>
-            </div>
-            <div>
-              <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
-            </div>
+            {r.leg ? (
+              // Main Salmon Two-Leg System
+              <>
+                <div className="font-semibold text-purple-700">
+                  Leg {r.leg}: {r.leg === 'A' ? `${r.job.putInLocation} → ${r.job.handoffLocation}` : `${r.job.handoffLocation} → ${r.job.takeOutLocation}`}
+                </div>
+                <div>
+                  <span className="inline-block mr-2">📅 Shuttle: {fmt(r.legDate || r.deliveryISO)}</span>
+                </div>
+                <div>
+                  <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
+                </div>
+              </>
+            ) : (
+              // Middle Fork Single-Leg System
+              <>
+                <div>
+                  <span className="inline-block mr-2">🚀 Launch: {fmt(r.job.putIn)} @ {r.job.putInLocation}</span>
+                </div>
+                <div>
+                  <span className="inline-block mr-2">🏁 Take-out: {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}</span>
+                </div>
+                <div>
+                  <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <span className={`px-1.5 py-0.5 rounded text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>

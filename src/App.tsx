@@ -927,6 +927,7 @@ export default function RouteDispatchPage() {
 
 function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
+  const [daysAhead, setDaysAhead] = useState<number>(7);
 
   function pillFor(leg: Leg) {
     const days = daysBetween(currentDate, leg.date);
@@ -954,9 +955,42 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
     }, job.legs[0]);
   }
 
+  // Filter jobs based on days ahead
+  const filteredJobs = useMemo(() => {
+    const cutoffDate = addDaysISO(currentDate, daysAhead);
+    return jobs.filter(job => {
+      // Check if any leg is within the date range
+      return job.legs.some(leg => leg.date >= currentDate && leg.date <= cutoffDate);
+    });
+  }, [jobs, currentDate, daysAhead]);
+
   return (
     <div className="space-y-3">
-      {jobs.map(job => {
+      {/* Filter Controls */}
+      <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
+        <div className="text-sm font-medium text-slate-700">
+          Showing {filteredJobs.length} {filteredJobs.length === 1 ? 'job' : 'jobs'}
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="days-filter" className="text-sm text-slate-600">Show next:</label>
+          <select
+            id="days-filter"
+            value={daysAhead}
+            onChange={(e) => setDaysAhead(Number(e.target.value))}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={1}>1 day</option>
+            <option value={3}>3 days</option>
+            <option value={7}>7 days</option>
+            <option value={14}>14 days</option>
+            <option value={30}>30 days</option>
+            <option value={60}>60 days</option>
+            <option value={90}>90 days</option>
+          </select>
+        </div>
+      </div>
+      
+      {filteredJobs.map(job => {
         const isExpanded = expandedJobs.has(job.id);
         const mostUrgentLeg = getMostUrgentLeg(job);
         const urgentDays = daysBetween(currentDate, mostUrgentLeg.date);

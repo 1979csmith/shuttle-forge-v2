@@ -1,1277 +1,484 @@
-import React, { useMemo, useState } from "react";
-import TwoLegView from "./TwoLegView";
+import { useMemo, useState } from "react";
 
-// ---- ShuttleForge MVP v0.1 (pure React + Tailwind) ----
-// Single-file, deploy-ready mock with local state only.
-// Goals: show the core flow (route -> overview -> jobs list -> capacity math)
-// You can drop this into any Next.js/React project or run in CodeSandbox.
+/**
+ * ShuttleForge — Route Dispatch (supports single- and two-leg jobs)
+ *
+ * Rules:
+ *  - Single-leg jobs are allowed
+ *  - Two-leg jobs must be A then B, with Leg B >= next day after Leg A
+ *  - 3+ legs -> error
+ *  - Driver required on each leg
+ *  - At least one van driver present on any day with car moves
+ * UI:
+ *  - Tabs per route, List/Timeline toggle
+ *  - Urgency chips: red (today/overdue), amber (<=3d), green (>3d)
+ *  - Capacity & Overbooked panel
+ *  - Checks panel summarizing errors/warnings
+ *  - Export button disabled on errors
+ */
 
-// ---- Types ----
-type Vehicle = {
-  make: string;
-  model: string;
-  year: number;
-  licensePlate: string;
-  color: string;
+/* ---------------- Helpers ---------------- */
+
+function pad2(n: number) { return String(n).padStart(2, "0"); }
+function iso(d: Date) { return d.toISOString().slice(0, 10); }
+function daysBetween(aISO: string, bISO: string) {
+  const A = new Date(aISO + "T00:00:00").getTime();
+  const B = new Date(bISO + "T00:00:00").getTime();
+  return Math.round((B - A) / 86400000);
+}
+function addDaysISO(dateStr: string, days: number) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return iso(d);
+}
+function formatMMDDYY(dateStr: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return pad2(d.getMonth() + 1) + "/" + pad2(d.getDate()) + "/" + String(d.getFullYear()).slice(2);
+}
+function urgencyClass(daysUntil: number) {
+  if (daysUntil <= 0) return "bg-red-100 text-red-800 border-red-300";
+  if (daysUntil <= 3) return "bg-amber-100 text-amber-800 border-amber-300";
+  return "bg-green-100 text-green-800 border-green-300";
+}
+
+type Car = {
   owner: string;
+  makeModel: string;
+  plate: string;
+};
+
+type Leg = {
+  leg?: string;
+  startLocation: string;
+  endLocation: string;
+  date: string;
+  depart: string;
+  arrive: string;
+  driverId?: string;
 };
 
 type Job = {
   id: string;
-  route: string;
-  putIn: string; // ISO date
-  takeOut: string; // ISO date
-  putInLocation: string;
-  takeOutLocation: string;
-  handoffLocation?: string; // For Main Salmon two-leg system
-  cars: number; // number of vehicles
-  customer: string;
-  status: "Pending" | "Accepted" | "In Progress" | "Completed";
-  vehicles: Vehicle[];
+  car: Car;
+  legs: Leg[];
 };
 
-type CarRow = {
-  job: Job;
-  carIndex: number;
-  deliveryISO: string;
-  pulledForward: boolean;
-  overflow: boolean;
-  driver: string;
-  leg?: 'A' | 'B'; // For Main Salmon two-leg system
-  legDate?: string; // Date for this specific leg
+type Driver = {
+  id: string;
+  name: string;
+  role: "shuttle" | "van";
+  onDuty: boolean;
 };
 
-const ROUTES = ["Main Salmon", "Middle Fork"] as const;
-const CUSTOMERS = [
-  "Johnson Party",
-  "Wilson Crew", 
-  "Hernandez Group",
-  "Green Family",
-  "Nguyen Team",
-  "Bennett Boats",
-  "Ramirez Outfit",
-  "Clark & Co.",
+type Route = {
+  id: string;
+  name: string;
+};
+
+type Issue = {
+  level: "error" | "warn";
+  message: string;
+};
+
+type DayCapacity = {
+  cars: number;
+  shuttleOnDuty: number;
+};
+
+/** Job number: OwnerName-MM/DD/YY (Leg B date, else single leg's date) */
+function jobNumber(job: Job) {
+  const legB = job.legs.find(l => l.leg === "B");
+  const useDate = legB ? legB.date : (job.legs[0] ? job.legs[0].date : "");
+  return job.car.owner + "-" + formatMMDDYY(useDate);
+}
+
+/* ---------------- Rule Engine ---------------- */
+
+/**
+ * evaluate(routeTodayISO, jobs, drivers)
+ * returns { issues, byDayCapacity }
+ * - issues: [{level: 'error'|'warn', message}]
+ * - byDayCapacity: Map<dateISO, {cars, shuttleOnDuty}>
+ */
+function evaluate(_routeTodayISO: string, jobs: Job[], drivers: Driver[]) {
+  const issues: Issue[] = [];
+
+  for (const job of jobs) {
+    if (!job.legs || job.legs.length === 0) {
+      issues.push({ level: "error", message: `Job ${job.id}: must have at least one leg` });
+      continue;
+    }
+
+    if (job.legs.length === 1) {
+      // ✅ single-leg OK (no A/B enforcement)
+    } else if (job.legs.length === 2) {
+      const [a, b] = job.legs;
+      if (a.leg !== "A" || b.leg !== "B") {
+        issues.push({ level: "error", message: `Job ${job.id}: legs must be in order A then B` });
+      }
+      if (daysBetween(a.date, b.date) < 1) {
+        issues.push({ level: "error", message: `Job ${job.id}: Leg B must be at least the next day after Leg A` });
+      }
+    } else {
+      issues.push({ level: "error", message: `Job ${job.id}: too many legs (${job.legs.length})` });
+    }
+  }
+
+  // Driver required on each leg
+  for (const job of jobs) {
+    for (const leg of job.legs || []) {
+      if (!leg.driverId) {
+        issues.push({ level: "warn", message: `Job ${job.id}: missing driver assignment on Leg ${leg.leg || "?"}` });
+      }
+    }
+  }
+
+  // Capacity & van presence
+  const byDayCapacity = new Map<string, DayCapacity>();
+  const days = new Set<string>();
+  for (const j of jobs) for (const l of j.legs) days.add(l.date);
+  for (const d of days) byDayCapacity.set(d, { cars: 0, shuttleOnDuty: 0 });
+
+  for (const j of jobs) for (const l of j.legs) {
+    const cap = byDayCapacity.get(l.date);
+    if (cap) cap.cars += 1;
+  }
+
+  const shuttleOnDutyCount = drivers.filter(d => d.role === "shuttle" && d.onDuty).length;
+  for (const d of days) {
+    const cap = byDayCapacity.get(d);
+    if (cap) cap.shuttleOnDuty = shuttleOnDutyCount;
+  }
+
+  // Van presence (demo simplification: if any van driver is onDuty, assume coverage)
+  const hasAnyVan = drivers.some(d => d.role === "van" && d.onDuty);
+  for (const [dISO, v] of byDayCapacity.entries()) {
+    if (v.cars > 0 && !hasAnyVan) {
+      issues.push({ level: "error", message: `No van driver scheduled on ${dISO} but ${v.cars} cars are moving` });
+    }
+  }
+
+  return { issues, byDayCapacity };
+}
+
+/* ---------------- Demo Data ---------------- */
+
+const TODAY = "2025-10-26";
+
+const DEMO_ROUTES: Route[] = [
+  { id: "main_salmon", name: "Main Salmon" },
+  { id: "middle_fork", name: "Middle Fork" },
 ];
 
-const PUT_IN_LOCATIONS = ["Boundary Creek", "Corn Creek", "Indian Creek", "Salmon River Lodge"];
-const TAKE_OUT_LOCATIONS = ["Cash Bar", "Vinegar Creek", "Carey Creek", "Long Tom Bar"];
-const HANDOFF_LOCATION = "Stanley Shuttle Yard"; // Main Salmon two-leg handoff point
+const DEMO_DRIVERS: Driver[] = [
+  { id: "D1", name: "Mike W", role: "shuttle", onDuty: true },
+  { id: "D2", name: "Sasha R", role: "shuttle", onDuty: true },
+  { id: "D3", name: "Troy H", role: "shuttle", onDuty: true },
+  { id: "V1", name: "Van Crew", role: "van", onDuty: true },
+];
 
-const VEHICLE_MAKES = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi"];
-const VEHICLE_MODELS = ["Camry", "F-150", "Civic", "Silverado", "Altima", "X3", "C-Class", "A4"];
-const VEHICLE_COLORS = ["White", "Black", "Silver", "Blue", "Red", "Gray", "Green", "Gold"];
-const OWNERS = ["John Smith", "Sarah Johnson", "Mike Wilson", "Lisa Brown", "David Lee", "Amy Davis", "Chris Taylor", "Maria Garcia"];
-const DRIVERS = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"];
-
-function isoDaysFromNow(n: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-function addDaysISO(iso: string, days: number) {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function fmt(iso: string) {
-  const dt = new Date(iso);
-  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function enumerateDays(startISO: string, endISO: string): string[] {
-  const days: string[] = [];
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  const current = new Date(start);
-  
-  while (current <= end) {
-    days.push(current.toISOString().slice(0, 10));
-    current.setDate(current.getDate() + 1);
-  }
-  
-  return days;
-}
-
-// --- Simple Risk (traffic‑light) ---
-// Red = urgent (trip ends today or already ended, not yet delivered)
-// Orange = deliver today (D‑1)
-// Green = good (scheduled early or already delivered)
-
-function isoToday() { return new Date().toISOString().slice(0, 10); }
-
-// --- Date helpers ---
-const MS = 24*60*60*1000;
-function daysBetween(aISO: string, bISO: string) {
-  const a = new Date(aISO).setHours(0,0,0,0); const b = new Date(bISO).setHours(0,0,0,0);
-  return Math.round((a - b)/MS);
-}
-
-// Rule window for a job
-function allowedWindow(job: Job) {
-  return { start: addDaysISO(job.putIn, 1), end: addDaysISO(job.takeOut, -1) };
-}
-
-// Early label (+Xd)
-function earlyLabel(job: Job, deliveryISO: string) {
-  const d1 = addDaysISO(job.takeOut, -1);
-  if (deliveryISO < d1) {
-    const daysEarly = daysBetween(d1, deliveryISO);
-    return `Scheduled Early (+${daysEarly}d)`; // green pill
-  }
-  if (deliveryISO === d1) return 'On Time (D‑1)';
-  return 'Deliver Today';
-}
-
-// Tiny toast/banner
-function useBanner() {
-  const [msg, set] = React.useState<null | { tone: 'error'|'info'|'success'; text: string }>(null);
-  const Banner = () => !msg ? null : (
-    <div className={`fixed top-4 right-4 z-50 rounded-xl border shadow px-4 py-2 text-sm ${
-      msg.tone==='error'?'bg-red-50 border-red-200 text-red-800': msg.tone==='success'?'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-sky-50 border-sky-200 text-sky-900'}`}
-    >{msg.text}</div>
-  );
-  return { msg, set, Banner };
-}
-
-function simpleRisk(r: CarRow): { level: 'red'|'orange'|'green'; label: string } {
-  const today = isoToday();
-  const d1 = addDaysISO(r.job.takeOut, -1);
-
-  // already delivered in the past
-  if (r.deliveryISO < today) return { level: 'green', label: 'Delivered' };
-
-  // trip ends today or earlier and delivery is not in the past
-  if (r.job.takeOut <= today) return { level: 'red', label: 'Urgent' };
-
-  // must deliver today (D‑1)
-  if (today === d1 && r.deliveryISO === d1) return { level: 'orange', label: 'Deliver Today' };
-
-  // scheduled earlier than D‑1 (good planning)
-  if (r.deliveryISO < d1) return { level: 'green', label: 'Scheduled Early' };
-
-  // scheduled on a future D‑1 (still fine / on time)
-  if (r.deliveryISO === d1) return { level: 'green', label: 'On Time (D‑1)' };
-
-  // fallback (shouldn't happen with our scheduler)
-  return { level: 'green', label: 'Ready' };
-}
-
-// --- Demo anomalies ---
-// Add forced overbook counts on specific dates relative to today.
-// Example list based on your sample: Nov 4: 14/7, Nov 5: 13/7, Nov 8: 18/7, etc.
-function isoPlusDays(n: number) {
-  const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0,10);
-}
-
-// Map of ISO date -> forced used count (will replace calculated usage for calendar + warnings)
-const DEMO_FORCE: Record<string, number> = {
-  // Today .. +29 days window. Adjust offsets as needed for demos.
-  [isoPlusDays(10)]: 14, // ~Nov 4
-  [isoPlusDays(11)]: 13,
-  [isoPlusDays(12)]: 10,
-  [isoPlusDays(13)]: 10,
-  [isoPlusDays(15)]: 18,
-  [isoPlusDays(17)]: 11,
-  [isoPlusDays(18)]: 9,
-  [isoPlusDays(19)]: 5,
+const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: Job[] }> = {
+  main_salmon: {
+    currentDate: TODAY,
+    drivers: DEMO_DRIVERS,
+    jobs: [
+      // Two-leg OK
+      {
+        id: "J-1002",
+        car: { owner: "Wilson", makeModel: "Toyota 4Runner", plate: "ID-7S1234" },
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:30", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:30", driverId: "D3" },
+        ],
+      },
+      // Single-leg OK
+      {
+        id: "J-2001",
+        car: { owner: "Solo", makeModel: "Chevy Tahoe", plate: "OR-9XY123" },
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Hammer Creek", date: "2025-10-28", depart: "08:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      // Two-leg: bad (same-day B + missing driver on B) -> error + warn
+      {
+        id: "J-1003",
+        car: { owner: "Ramirez", makeModel: "Ford F-150", plate: "WA-C56789B" },
+        legs: [
+          { leg: "A", startLocation: "Indian Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "12:15", arrive: "17:00" },
+        ],
+      },
+    ],
+  },
+  middle_fork: {
+    currentDate: TODAY,
+    drivers: DEMO_DRIVERS,
+    jobs: [
+      // Single-leg example (common on some routes)
+      {
+        id: "MF-42",
+        car: { owner: "Johnson", makeModel: "Jeep Grand Cherokee", plate: "ID-3A009X" },
+        legs: [
+          { leg: "A", startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+    ],
+  },
 };
 
-function pickStatus(i: number): Job["status"] {
-  const arr: Job["status"][] = ["Pending", "Accepted", "In Progress", "Accepted"]; // skew green
-  return arr[i % arr.length];
-}
+/* ---------------- Root Component ---------------- */
 
-function generateVehicle(seed: number): Vehicle {
-  const make = VEHICLE_MAKES[seed % VEHICLE_MAKES.length];
-  const model = VEHICLE_MODELS[seed % VEHICLE_MODELS.length];
-  const color = VEHICLE_COLORS[seed % VEHICLE_COLORS.length];
-  const owner = OWNERS[seed % OWNERS.length];
-  const year = 2018 + (seed % 6); // 2018-2023
-  const licensePlate = `${String.fromCharCode(65 + (seed % 26))}${String.fromCharCode(65 + ((seed + 1) % 26))}${1000 + (seed % 9000)}`;
-  
-  return { make, model, year, licensePlate, color, owner };
-}
+export default function RouteDispatchPage() {
+  const [activeRoute, setActiveRoute] = useState("main_salmon");
+  const route = DEMO_ROUTES.find(r => r.id === activeRoute);
 
-function buildDemoJobs(days = 10): Job[] {
-  const jobs: Job[] = [];
-  let idCounter = 1000;
-  for (let d = 0; d < days; d++) {
-    const putIn = isoDaysFromNow(d);
-    for (const route of ROUTES) {
-      // Main Salmon: more jobs, fewer cars per job
-      // Middle Fork: fewer jobs, more cars per job, more pending
-      const isMainSalmon = route === "Main Salmon";
-      const perDay = isMainSalmon ? (2 + (d % 4)) : (1 + (d % 3)); // Main: 2-5, Middle: 1-3
-      
-      for (let k = 0; k < perDay; k++) {
-        const id = `J-${++idCounter}`;
-        const cars = isMainSalmon ? (1 + ((idCounter + k) % 3)) : (2 + ((idCounter + k) % 4)); // Main: 1-3, Middle: 2-5
-        const customer = CUSTOMERS[(idCounter + k) % CUSTOMERS.length];
-        const status = isMainSalmon ? pickStatus(idCounter + k) : (k < 1 ? "Pending" : pickStatus(idCounter + k)); // Middle Fork has more pending
-        const duration = 5 + ((idCounter + k) % 3); // 5–7 days
-        const putInLocation = PUT_IN_LOCATIONS[(idCounter + k) % PUT_IN_LOCATIONS.length];
-        const takeOutLocation = TAKE_OUT_LOCATIONS[(idCounter + k) % TAKE_OUT_LOCATIONS.length];
-        const handoffLocation = isMainSalmon ? HANDOFF_LOCATION : undefined; // Two-leg system for Main Salmon
-        
-        // Generate vehicles for this job
-        const vehicles: Vehicle[] = [];
-        for (let v = 0; v < cars; v++) {
-          vehicles.push(generateVehicle(idCounter + k + v));
-        }
-        
-        jobs.push({ id, route, putIn, takeOut: addDaysISO(putIn, duration), putInLocation, takeOutLocation, handoffLocation, cars, customer, status, vehicles });
-      }
-    }
-  }
-  return jobs;
-}
+  // Local state so UI updates in place
+  const [jobs] = useState(DEMO_DATA[activeRoute].jobs);
+  const [drivers] = useState(DEMO_DATA[activeRoute].drivers);
+  const currentDate = DEMO_DATA[activeRoute].currentDate;
 
-// ---------- Seed Data ----------
+  const { issues, byDayCapacity } = useMemo(
+    () => evaluate(currentDate, jobs, drivers),
+    [currentDate, jobs, drivers]
+  );
 
-// ---------- Helpers ----------
+  const overbookedDays = useMemo(
+    () => Array.from(byDayCapacity.entries())
+      .filter(([, v]) => v.cars > v.shuttleOnDuty)
+      .map(([d]) => d),
+    [byDayCapacity]
+  );
 
-function withinRange(job: Job, startISO: string, endISO: string) {
-  return job.putIn >= startISO && job.putIn < endISO;
-}
+  const carsToMove = jobs.length;
+  const hasErrors = issues.some(i => i.level === "error");
+  const exportBlocked = hasErrors;
 
-function vanDriversNeeded(totalCars: number) {
-  // Per your rule: always 1 van driver if there are cars to move
-  return totalCars > 0 ? 1 : 0;
-}
-
-// ---------- UI ----------
-export default function ShuttleForge() {
-  const demoSeed = useMemo(() => buildDemoJobs(14), []);
-  const [jobs, setJobs] = useState<Job[]>(demoSeed);
-  const [selectedRoute, setSelectedRoute] = useState<string | null>("Main Salmon");
-  const [range, setRange] = useState<"3d" | "7d" | "30d">("7d");
-  const [viewMode, setViewMode] = useState<"dispatch" | "twoleg">("dispatch");
-
-  const startISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const endISO = useMemo(() => {
-    const map: Record<typeof range, number> = { "3d": 3, "7d": 7, "30d": 30 } as const;
-    const d = new Date();
-    d.setDate(d.getDate() + map[range]);
-    return d.toISOString().slice(0, 10);
-  }, [range]);
-
-  const routes = useMemo(() => {
-    const set = new Set(jobs.map((j) => j.route));
-    return Array.from(set);
-  }, [jobs]);
-
-  // Route filter only; date filtering happens on DELIVERY dates after scheduling
-  const visibleJobs = useMemo(() => (selectedRoute ? jobs.filter(j => j.route === selectedRoute) : jobs), [jobs, selectedRoute]);
-
-  // Overrides map + refresher
-  const deliveryOverrides = React.useRef<Record<string, string>>({});
-  const driverOverrides = React.useRef<Record<string, string>>({});
-  const [, setTick] = useState(0);
-  function forceRefresh(){ setTick(t => t+1); }
-
-  // Each car becomes a scheduled delivery row
-  // Main Salmon: TWO legs (A: Launch→Stanley, B: Stanley→Takeout)
-  // Middle Fork: Single leg
-  // Prefer earliest available day within [putIn+1 .. takeOut-1]; cap 7/day, overflow to D-1 if needed
-  const scheduledRows: CarRow[] = useMemo(() => {
-    const rows: CarRow[] = [];
-    const usage: Record<string, number> = {}; // shuttle drivers used per day
-    const jobsSorted = [...visibleJobs].sort((a,b) => a.takeOut === b.takeOut ? a.putIn.localeCompare(b.putIn) : a.takeOut.localeCompare(b.takeOut));
-
-    for (const job of jobsSorted) {
-      const isMainSalmon = job.route === "Main Salmon";
-      
-      if (isMainSalmon && job.handoffLocation) {
-        // TWO-LEG SYSTEM for Main Salmon
-        // Leg A: putIn → handoff (day after put-in)
-        // Leg B: handoff → takeOut (day before take-out)
-        const legADate = addDaysISO(job.putIn, 1); // Day after launch
-        const legBDate = addDaysISO(job.takeOut, -1); // Day before take-out
-        
-        for (let ci = 0; ci < job.cars; ci++) {
-          const driverA = DRIVERS[rows.length % DRIVERS.length];
-          const driverB = DRIVERS[(rows.length + 1) % DRIVERS.length];
-          
-          // Leg A
-          usage[legADate] = (usage[legADate] || 0) + 1;
-          rows.push({ 
-            job, 
-            carIndex: ci, 
-            deliveryISO: legADate, 
-            pulledForward: false, 
-            overflow: (usage[legADate] || 0) > 7, 
-            driver: driverA,
-            leg: 'A',
-            legDate: legADate
-          });
-          
-          // Leg B
-          usage[legBDate] = (usage[legBDate] || 0) + 1;
-          rows.push({ 
-            job, 
-            carIndex: ci, 
-            deliveryISO: legBDate, 
-            pulledForward: false, 
-            overflow: (usage[legBDate] || 0) > 7, 
-            driver: driverB,
-            leg: 'B',
-            legDate: legBDate
-          });
-        }
-      } else {
-        // SINGLE-LEG SYSTEM for Middle Fork
-        const start = addDaysISO(job.putIn, 1);
-        const end = addDaysISO(job.takeOut, -1);
-        const eligible = enumerateDays(start, end);
-        for (let ci = 0; ci < job.cars; ci++) {
-          let assigned: string | null = null;
-          for (const day of eligible) {
-            const used = usage[day] || 0;
-            if (used < 7) { usage[day] = used + 1; assigned = day; break; }
-          }
-          if (!assigned) {
-            const d1 = addDaysISO(job.takeOut, -1);
-            usage[d1] = (usage[d1] || 0) + 1;
-            rows.push({ job, carIndex: ci, deliveryISO: d1, pulledForward: false, overflow: true, driver: DRIVERS[rows.length % DRIVERS.length] });
-          } else {
-            rows.push({ job, carIndex: ci, deliveryISO: assigned, pulledForward: assigned !== addDaysISO(job.takeOut, -1), overflow: false, driver: DRIVERS[rows.length % DRIVERS.length] });
-          }
-        }
-      }
-    }
-    
-    // Apply overrides
-    return rows.map(r => {
-      const key = `${r.job.id}::${r.carIndex}`;
-      const deliveryOver = deliveryOverrides.current[key];
-      const driverOver = driverOverrides.current[key];
-      let result = r;
-      if (deliveryOver) result = { ...result, deliveryISO: deliveryOver };
-      if (driverOver) result = { ...result, driver: driverOver };
-      return result;
-    });
-  }, [visibleJobs, setTick]);
-
-  // Filter rows by DELIVERY window - only show vehicles that need to be moved (today or future)
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const rowsInRange = useMemo(() => scheduledRows.filter(r => r.deliveryISO >= today && r.deliveryISO >= startISO && r.deliveryISO < endISO), [scheduledRows, startISO, endISO, today]);
-
-  const enriched = useMemo(() => rowsInRange.map(r => ({ ...r, risk: simpleRisk(r) })), [rowsInRange]);
-
-  // Group by delivery day (ISO)
-  const groups = useMemo(() => {
-    const map: Record<string, (typeof enriched)[number][]> = {};
-    for (const r of enriched) (map[r.deliveryISO] ||= []).push(r);
-    const keys = Object.keys(map).sort();
-    return keys.map(k => ({ iso: k, rows: map[k] }));
-  }, [enriched]);
-
-  // Metrics
-  const metrics = useMemo(() => {
-    const totalCars = rowsInRange.length;
-    const driverCapacity = { available: 7, max: 7 };
-    const neededVanDrivers = vanDriversNeeded(totalCars);
-    const overbooked = totalCars > driverCapacity.available;
-    return { 
-      totalDeliveries: rowsInRange.length,
-      totalCars,
-      driverCapacity, 
-      neededVanDrivers, 
-      overbooked 
-    };
-  }, [rowsInRange]);
-
-  // Integrity checks
-  // For Main Salmon, each car creates 2 rows (Leg A and Leg B), so we need to count unique cars
-  const jobToScheduledCount = useMemo(() => {
-    const map: Record<string, Set<number>> = {};
-    for (const r of scheduledRows) {
-      if (!map[r.job.id]) map[r.job.id] = new Set();
-      map[r.job.id].add(r.carIndex);
-    }
-    // Convert Sets to counts
-    const counts: Record<string, number> = {};
-    for (const [jobId, carSet] of Object.entries(map)) {
-      counts[jobId] = carSet.size;
-    }
-    return counts;
-  }, [scheduledRows]);
-
-  const reconciliationIssues = useMemo(() => {
-    const issues: { job: Job; expected: number; scheduled: number }[] = [];
-    for (const j of visibleJobs) { const s = jobToScheduledCount[j.id] || 0; if (s !== j.cars) issues.push({ job: j, expected: j.cars, scheduled: s }); }
-    return issues;
-  }, [visibleJobs, jobToScheduledCount]);
-
-  const util30 = useMemo(() => {
-    const days: { iso: string; used: number }[] = [];
-    const start = new Date(startISO);
-    const end = new Date(startISO); end.setDate(end.getDate() + 29);
-    const baseUsage: Record<string, number> = {};
-    for (const r of scheduledRows) baseUsage[r.deliveryISO] = (baseUsage[r.deliveryISO] || 0) + 1;
-    const d = new Date(start);
-    while (d <= end) {
-      const iso = d.toISOString().slice(0, 10);
-      const forced = DEMO_FORCE[iso];
-      const used = forced !== undefined ? forced : (baseUsage[iso] || 0);
-      days.push({ iso, used });
-      d.setDate(d.getDate() + 1);
-    }
-    return days;
-  }, [scheduledRows, startISO]);
-
-  // Compute overbooked days from util30
-  const overbookedDays = useMemo(() => util30.filter(d => d.used > 7), [util30]);
-
-  // Calculate unassigned vehicles (more than 8 drivers needed)
-  const unassignedVehicles = useMemo(() => {
-    const totalVehicles = rowsInRange.length;
-    const maxDrivers = 8; // D1-D8
-    return Math.max(0, totalVehicles - maxDrivers);
-  }, [rowsInRange]);
-
-  // Get vehicles for a specific day
-  const getVehiclesForDay = (dayISO: string) => {
-    return enriched.filter(r => r.deliveryISO === dayISO);
-  };
-
-  // Get recommendations for moving vehicles from an overbooked day
-  const getMoveRecommendations = (dayISO: string) => {
-    const vehicles = getVehiclesForDay(dayISO);
-    const dayUtil = util30.find(d => d.iso === dayISO);
-    if (!dayUtil || dayUtil.used <= 7) return [];
-
-    const recommendations = [];
-    const overage = dayUtil.used - 7;
-    
-    // Find days with available capacity
-    const availableDays = util30.filter(d => d.used < 7 && d.iso !== dayISO);
-    
-    for (let i = 0; i < overage && i < vehicles.length; i++) {
-      const vehicle = vehicles[i];
-      const bestDay = availableDays.find(d => d.iso > vehicle.job.putIn && d.iso < vehicle.job.takeOut);
-      if (bestDay) {
-        recommendations.push({
-          vehicle,
-          fromDay: dayISO,
-          toDay: bestDay.iso,
-          reason: `Move to ${fmt(bestDay.iso)} (${bestDay.used}/7 capacity)`
-        });
-      }
-    }
-    
-    return recommendations;
-  };
-
-  // ---- Add Job (simple inline form) ----
-  const [open, setOpen] = useState(false);
-  const [openCalendar, setOpenCalendar] = useState(false);
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  
-  const { Banner, set: setBanner } = useBanner();
-
-  // Update delivery date for a car row (validates rules)
-  function moveVehicleRow(r: CarRow, newDeliveryISO: string) {
-    const { start, end } = allowedWindow(r.job);
-    // User moves must stick to rules; but existing bad data may remain for demo
-    if (newDeliveryISO < start || newDeliveryISO > end) {
-      setBanner({ tone: 'error', text: `Rule: move between ${fmt(start)} and ${fmt(end)} (Put‑in+1 to D‑1).` });
-      return false;
-    }
-    // Mutate scheduledRows by replacing r.deliveryISO
-    // If your rows are derived from jobs each render, keep a client override map instead:
-    deliveryOverrides.current[`${r.job.id}::${r.carIndex}`] = newDeliveryISO;
-    setBanner({ tone: 'success', text: `Moved to ${fmt(newDeliveryISO)}.` });
-    forceRefresh();
-    return true;
-  }
-
-  // Update driver assignment
-  function updateDriver(jobId: string, carIndex: number, newDriver: string) {
-    driverOverrides.current[`${jobId}::${carIndex}`] = newDriver;
-    setBanner({ tone: 'success', text: `Driver updated to ${newDriver}.` });
-    forceRefresh();
-  }
-
-  // Update locations
-  function updateLocations(jobId: string, putInLocation: string, takeOutLocation: string) {
-    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, putInLocation, takeOutLocation } : j));
-    setBanner({ tone: 'success', text: `Locations updated.` });
-  }
-  const [draft, setDraft] = useState<Job>({
-    id: "",
-    route: selectedRoute || "Main Salmon",
-    putIn: startISO,
-    takeOut: isoDaysFromNow(3),
-    putInLocation: PUT_IN_LOCATIONS[0],
-    takeOutLocation: TAKE_OUT_LOCATIONS[0],
-    handoffLocation: selectedRoute === "Main Salmon" ? HANDOFF_LOCATION : undefined,
-    cars: 1,
-    customer: "",
-    status: "Pending",
-    vehicles: [],
-  });
-
-  function addJob() {
-    if (!draft.customer) return;
-    const id = `J-${Math.floor(1000 + Math.random() * 9000)}`;
-    setJobs((prev: Job[]) => [...prev, { ...draft, id }]);
-    setOpen(false);
-    // reset
-    setDraft({
-      id: "",
-      route: selectedRoute || "Main Salmon",
-      putIn: startISO,
-      takeOut: isoDaysFromNow(3),
-      putInLocation: PUT_IN_LOCATIONS[0],
-      takeOutLocation: TAKE_OUT_LOCATIONS[0],
-      handoffLocation: selectedRoute === "Main Salmon" ? HANDOFF_LOCATION : undefined,
-      cars: 1,
-      customer: "",
-      status: "Pending",
-      vehicles: [],
-    });
-  }
-
-  // If in two-leg view mode, show that component instead
-  if (viewMode === "twoleg") {
-    return <TwoLegView onBack={() => setViewMode("dispatch")} />;
-  }
+  const [mode, setMode] = useState<"list" | "timeline">("list");
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">ShuttleForge — Dispatch</h1>
-            <p className="text-sm text-slate-600">Ultra-lean MVP • Local data only • Ready to demo • v2.0</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {selectedRoute === "Main Salmon" && (
-              <button
-                onClick={() => setViewMode("twoleg")}
-                className="text-sm rounded-xl px-4 py-2 border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
-              >
-                📋 Two-Leg View
-              </button>
-            )}
-            <RangeButton label="Next 3 days" active={range === "3d"} onClick={() => setRange("3d")} />
-            <RangeButton label="Next 7 days" active={range === "7d"} onClick={() => setRange("7d")} />
-            <RangeButton label="Next 30 days" active={range === "30d"} onClick={() => setRange("30d")} />
-          </div>
-        </header>
-
-        {/* Driver Assignment Warning */}
-        {unassignedVehicles > 0 && (
-          <div className="bg-red-600 text-white p-4 rounded-2xl border-2 border-red-700">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">🚨</div>
-              <div>
-                <div className="font-bold text-lg">DRIVER SHORTAGE ALERT</div>
-                <div className="text-red-100">
-                  {unassignedVehicles} vehicles scheduled without drivers! 
-                  Only 8 drivers available (D1-D8) for {rowsInRange.length} vehicles.
-                </div>
-                <div className="text-red-200 text-sm mt-1">
-                  ⚠️ This must be addressed immediately - vehicles cannot be moved without drivers!
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Route selector */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {routes.map((r) => {
-            const routeJobs = jobs.filter((j) => j.route === r && withinRange(j, startISO, endISO));
-            const cars = routeJobs.reduce((s, j) => s + j.cars, 0);
-            const requests = routeJobs.filter((j) => j.status === "Pending").length;
-            const selected = selectedRoute === r;
-            return (
-              <button
-                key={r}
-                onClick={() => setSelectedRoute(r)}
-                className={`text-left rounded-2xl p-4 shadow-sm border transition-all ${
-                  selected ? "border-blue-500 shadow-md bg-white" : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-lg">{r}</h2>
-                  <span className="text-xs px-2 py-1 rounded-full bg-slate-100">{routeJobs.length} jobs</span>
-                </div>
-                <div className="mt-2 text-sm text-slate-600">Cars to move: <b>{cars}</b></div>
-                <div className="text-sm text-slate-600">Pending requests: <b>{requests}</b></div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Overview + Actions */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{selectedRoute || "All Routes"} — Overview</h3>
-              <button
-                onClick={() => setOpen(true)}
-                className="rounded-xl px-4 py-2 bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
-              >
-                + New Job
-              </button>
-            </div>
-
-            {/* Deliveries by day */}
-            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              {(() => {
-                if (groups.length === 0) return <div className="p-6 text-center text-slate-500">No deliveries scheduled.</div>;
-                return (
-                  <>
-                    {groups.map(({ iso, rows }, idx) => {
-                      // decide header state
-
-                      return (
-                        <div key={iso} className={`border-t ${idx === 0 ? 'first:border-t-0' : ''}`}>
-                          <DayHeader iso={iso} count={rows.length} drivers={8} />
-                          <DayDropZone
-                            onDropVehicle={(key)=>{
-                              const found = rows.find(r => `${r.job.id}::${r.carIndex}` === key);
-                              if (!found) return;
-                              moveVehicleRow(found, iso);
-                            }}
-                          >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {rows.map((r) => (
-                                <VehicleCard 
-                                  key={`${r.job.id}-${r.carIndex}`} 
-                                  r={r} 
-                                  expandedCards={expandedCards} 
-                                  setExpandedCards={setExpandedCards}
-                                  onUpdateDriver={updateDriver}
-                                  onUpdateLocations={updateLocations}
-                                />
-                              ))}
-                            </div>
-                          </DayDropZone>
-                        </div>
-                      );
-                    })}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Metrics card */}
-          <div className="space-y-4">
-            <ExpandableCard title="Capacity & Warnings" onExpand={() => setOpenCalendar(true)}>
-              <p>Deliveries in view: {metrics.totalDeliveries}</p>
-              <p>Van Drivers Needed: {metrics.neededVanDrivers}</p>
-              <p>Shuttle Driver Capacity: 7/7</p>
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                <div className="text-sm font-semibold mb-1">Status: {overbookedDays.length > 0 ? '⚠️ OVERBOOKED' : 'OK'}</div>
-                {overbookedDays.length > 0 && (
-                  <ul className="text-xs list-disc pl-5 space-y-1">
-                    {overbookedDays.slice(0,5).map(d => (
-                      <li key={d.iso}>{fmt(d.iso)} — {d.used}/7</li>
-                    ))}
-                    {overbookedDays.length > 5 && <li>+ {overbookedDays.length - 5} more…</li>}
-                  </ul>
-                )}
-              </div>
-            </ExpandableCard>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h4 className="font-semibold mb-2">Date Range</h4>
-              <p className="text-sm text-slate-600">Showing deliveries between <b>{fmt(startISO)}</b> and <b>{fmt(endISO)}</b>.</p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h4 className="font-semibold mb-2">Escalating Alerts</h4>
-              {(() => {
-                const d1List = enriched.filter(r => r.risk.label.startsWith('Deliver Today'));
-                const urgent = enriched.filter(r => r.risk.label === 'Urgent');
-
-                return (
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <div className="font-semibold">🔴 Critical</div>
-                      {urgent.length === 0 ? (
-                        <div className="text-slate-500 text-xs">No critical items.</div>
-                      ) : (
-                        <ul className="list-disc pl-4">
-                          {urgent.map(r => (<li key={`u-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Take‑out {fmt(r.job.takeOut)}</li>))}
-                        </ul>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-semibold">🟠 Today (D‑1)</div>
-                      {d1List.length === 0 ? (
-                        <div className="text-slate-500 text-xs">No D‑1 deliveries pending.</div>
-                      ) : (
-                        <ul className="list-disc pl-4">
-                          {d1List.map(r => (<li key={`d1-${r.job.id}-${r.carIndex}`}>{r.job.customer} • Car {r.carIndex + 1} • Delivery {fmt(r.deliveryISO)}</li>))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-              <h4 className="font-semibold mb-1">Reconciliation</h4>
-              <p className="text-xs text-rose-800 mb-2">Every car must have a scheduled delivery. Any mismatch shows here.</p>
-              {reconciliationIssues.length === 0 ? (
-                <div className="text-xs text-rose-700">All jobs reconcile ✅</div>
-              ) : (
-                <ul className="text-sm list-disc pl-4 space-y-1">
-                  {reconciliationIssues.map((x) => (
-                    <li key={x.job.id}>{x.job.customer}: scheduled {x.scheduled}/{x.expected} cars</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <ExpandableCard title="30‑Day Delivery Utilization" onExpand={() => setOpenCalendar(true)}>
-              <div className="grid grid-cols-10 gap-2 text-center">
-                {util30.map((d) => (
-                  <div key={d.iso} className={`rounded-lg p-2 border ${d.used > 7 ? "border-red-400 bg-red-50" : d.used === 7 ? "border-amber-400 bg-amber-50" : "border-emerald-400 bg-emerald-50"}`}>
-                    <div className="text-xs">{fmt(d.iso)}</div>
-                    <div className="text-sm font-semibold">{d.used}/7</div>
-                  </div>
-                ))}
-              </div>
-            </ExpandableCard>
-          </div>
-        </div>
-
-        {/* Modal */}
-        {open && (
-          <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-xl p-6 shadow-xl border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">New Job</h3>
-                <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-slate-700">✕</button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <Label>Route</Label>
-                <select
-                  className="col-span-1 rounded-xl border border-slate-300 p-2"
-                  value={draft.route}
-                  onChange={(e) => setDraft((d) => ({ ...d, route: e.target.value }))}
-                >
-                  {routes.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-
-                <Label>Customer</Label>
-                <input
-                  className="rounded-xl border border-slate-300 p-2"
-                  placeholder="e.g., Smith Party"
-                  value={draft.customer}
-                  onChange={(e) => setDraft((d) => ({ ...d, customer: e.target.value }))}
-                />
-
-                <Label>Put-in</Label>
-                <input
-                  type="date"
-                  className="rounded-xl border border-slate-300 p-2"
-                  value={draft.putIn}
-                  onChange={(e) => setDraft((d) => ({ ...d, putIn: e.target.value }))}
-                />
-
-                <Label>Take-out</Label>
-                <input
-                  type="date"
-                  className="rounded-xl border border-slate-300 p-2"
-                  value={draft.takeOut}
-                  onChange={(e) => setDraft((d) => ({ ...d, takeOut: e.target.value }))}
-                />
-
-                <Label>Cars</Label>
-                <input
-                  type="number"
-                  min={0}
-                  className="rounded-xl border border-slate-300 p-2"
-                  value={draft.cars}
-                  onChange={(e) => setDraft((d) => ({ ...d, cars: Number(e.target.value) }))}
-                />
-
-                <Label>Status</Label>
-                <select
-                  className="rounded-xl border border-slate-300 p-2"
-                  value={draft.status}
-                  onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as Job["status"] }))}
-                >
-                  <option>Pending</option>
-                  <option>Accepted</option>
-                  <option>In Progress</option>
-                  <option>Completed</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-5">
-                <button
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addJob}
-                  className="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700"
-                >
-                  Save Job
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <footer className="pt-4 text-center text-xs text-slate-500">
-          Built for speed: refactor to Supabase later; ship value now.
-        </footer>
+    <div className="p-6 max-w-7xl mx-auto font-sans space-y-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-2">
+        {DEMO_ROUTES.map(r => (
+          <button
+            key={r.id}
+            onClick={() => setActiveRoute(r.id)}
+            className={`px-3 py-2 rounded-xl border text-sm ${activeRoute === r.id ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+          >
+            {r.name}
+          </button>
+        ))}
       </div>
 
-      {/* Banner for toasts */}
-      <Banner />
-
-      {/* Calendar Modal */}
-      <Modal open={openCalendar} onClose={() => setOpenCalendar(false)}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold">30‑Day Delivery Utilization</h3>
-          <div className="text-sm text-slate-600">Red = over 7, Yellow = exactly 7, Green = under 7</div>
-        </div>
-        <CalendarGrid days={util30} onDayClick={setSelectedDay} />
-        {overbookedDays.length > 0 && (
-          <div className="mt-4">
-            <h4 className="font-semibold mb-1">Overbooked Days</h4>
-            <ul className="list-disc pl-5 text-sm space-y-1">
-              {overbookedDays.map(d => <li key={`ob-${d.iso}`}>{fmt(d.iso)} — {d.used}/7 (over by {d.used - 7})</li>)}
-            </ul>
-          </div>
-        )}
-      </Modal>
-
-      {/* Day Details Modal */}
-      <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)}>
-        {selectedDay && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Day Details - {fmt(selectedDay)}</h3>
-              <div className="text-sm text-slate-600">
-                {getVehiclesForDay(selectedDay).length} vehicles scheduled
-              </div>
-            </div>
-            
-            {(() => {
-              const dayUtil = util30.find(d => d.iso === selectedDay);
-              const isOverbooked = dayUtil && dayUtil.used > 7;
-              if (isOverbooked) {
-                return (
-                  <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">🚨</span>
-                      <div className="font-bold text-red-800">OVERBOOKED DAY</div>
-                    </div>
-                    <div className="text-red-700">
-                      <div className="font-semibold">Capacity: 7 vehicles | Scheduled: {dayUtil?.used} vehicles</div>
-                      <div className="text-sm">Over by {dayUtil ? dayUtil.used - 7 : 0} vehicles - {dayUtil ? dayUtil.used - 7 : 0} vehicles need to be moved</div>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-            
-            <div className="grid gap-3 mb-4">
-              {getVehiclesForDay(selectedDay).map((r, index) => {
-                const vehicle = r.job.vehicles[r.carIndex];
-                const cardId = `${r.job.id}-${r.carIndex}`;
-                const isExpanded = expandedCards.has(cardId);
-                const needsMove = r.risk.level === 'red' || r.risk.level === 'orange';
-                const dayUtil = util30.find(d => d.iso === selectedDay);
-                const isOverbooked = dayUtil && dayUtil.used > 7 && index >= 7;
-                
-                return (
-                  <div key={cardId} className={`rounded-lg border p-3 cursor-pointer transition-all ${
-                    isOverbooked ? 'border-red-300 bg-red-100 hover:bg-red-200' :
-                    r.risk.level === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 
-                    r.risk.level === 'orange' ? 'border-orange-200 bg-orange-50 hover:bg-orange-100' : 
-                    'border-slate-200 bg-white hover:bg-slate-50'
-                  }`} onClick={() => {
-                    const newExpanded = new Set(expandedCards);
-                    if (isExpanded) {
-                      newExpanded.delete(cardId);
-                    } else {
-                      newExpanded.add(cardId);
-                    }
-                    setExpandedCards(newExpanded);
-                  }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                          isOverbooked ? 'bg-red-200 text-red-800' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {r.carIndex + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900 text-sm">{vehicle.owner}</div>
-                          <div className="text-xs text-slate-500">{vehicle.year} {vehicle.make} {vehicle.model}</div>
-                          {isOverbooked && <div className="text-xs text-red-600 font-medium">OVERBOOKED</div>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {isOverbooked && <span className="text-red-600 text-xs font-bold">🚨 OVER</span>}
-                        {needsMove && !isOverbooked && <span className="text-red-500 text-xs">⚠️</span>}
-                        <RiskPill level={r.risk.level} label={r.risk.label} />
-                      </div>
-                    </div>
-                    
-                    {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500">License:</span>
-                            <div className="font-mono">{vehicle.licensePlate}</div>
-                          </div>
-                          <div>
-                            <span className="text-slate-500">Driver:</span>
-                            <div className="font-medium text-blue-600">{r.driver}</div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500">Put-in:</span>
-                            <div>{fmt(r.job.putIn)}</div>
-                          </div>
-                          <div>
-                            <span className="text-slate-500">Take-out:</span>
-                            <div>{fmt(r.job.takeOut)}</div>
-                          </div>
-                        </div>
-                        {isOverbooked && (
-                          <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-red-800">
-                            <div className="font-semibold">⚠️ This vehicle is causing the overbook situation</div>
-                            <div className="text-xs">Day capacity: 7 vehicles, but {dayUtil?.used} are scheduled</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {getMoveRecommendations(selectedDay).length > 0 && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">📋 Move Recommendations</h4>
-                <div className="space-y-2 text-sm">
-                  {getMoveRecommendations(selectedDay).map((rec, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
-                      <div>
-                        <span className="font-medium">{rec.vehicle.job.vehicles[rec.vehicle.carIndex].owner}</span>
-                        <span className="text-slate-500 ml-2">({rec.vehicle.driver})</span>
-                      </div>
-                      <div className="text-blue-600 font-medium">{rec.reason}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
-    </div>
-  );
-}
-
-// ---------- Small UI bits ----------
-function RangeButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={`text-sm rounded-xl px-3 py-2 border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white border-slate-300 hover:border-slate-400"}`}>{label}</button>
-  );
-}
-
-function DayHeader({ iso, count, drivers = 8 }: { iso: string; count: number; drivers?: number }) {
-  const over = count > drivers; const atCap = count === drivers;
-  const color = over ? 'bg-red-50 border-red-200 text-red-800' : atCap ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800';
-  const label = over ? `OVERBOOKED • ${count}/${drivers}` : atCap ? `DELIVER TODAY • ${count}/${drivers}` : `ALL GOOD • ${count}/${drivers}`;
-  return (
-    <div className={`px-4 py-2 flex items-center justify-between border ${color}`}>
-      <div className="font-semibold text-sm">{fmt(iso)} — Deliveries</div>
-      <div className="text-xs font-semibold">{label}</div>
-    </div>
-  );
-}
-
-function RiskPill({ level, label }: { level: 'red'|'orange'|'green'; label: string }) {
-  const cls = level === 'red' ? 'bg-red-50 text-red-700 border-red-200'
-    : level === 'orange' ? 'bg-orange-50 text-orange-700 border-orange-200'
-    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  return <span className={`px-2 py-1 rounded-full text-xs border ${cls}`}>{label}</span>;
-}
-
-function ExpandableCard({ title, children, onExpand }: { title: string; children: React.ReactNode; onExpand?: () => void }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-semibold">{title}</h4>
-        {onExpand && (
-          <button onClick={onExpand} className="text-sm px-3 py-1 rounded-lg border hover:bg-slate-50">Expand</button>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl shadow-xl border border-slate-200">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="font-semibold">Details</div>
-          <button onClick={onClose} className="text-slate-600 hover:text-slate-800">✕</button>
-        </div>
-        <div className="p-4 max-h-[80vh] overflow-auto">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpdateLocations }: { 
-  r: CarRow; 
-  expandedCards: Set<string>; 
-  setExpandedCards: React.Dispatch<React.SetStateAction<Set<string>>>;
-  onUpdateDriver: (jobId: string, carIndex: number, newDriver: string) => void;
-  onUpdateLocations: (jobId: string, putInLocation: string, takeOutLocation: string) => void;
-}) {
-  const risk = (() => {
-    const today = isoToday();
-    if (r.deliveryISO < today) return { level:'green', pill: 'Delivered' };
-    const d1 = addDaysISO(r.job.takeOut, -1);
-    if (r.deliveryISO < d1) return { level:'green', pill: earlyLabel(r.job, r.deliveryISO) };
-    if (r.deliveryISO === d1) return { level:'orange', pill: 'Deliver Today' };
-    return { level:'red', pill: 'Late (Take‑out day!)' }; // exists only in demo/problem data
-  })();
-
-  const pillCls = risk.level==='red'?'bg-red-50 text-red-700 border-red-200': risk.level==='orange'?'bg-orange-50 text-orange-700 border-orange-200':'bg-emerald-50 text-emerald-700 border-emerald-200';
-
-  const key = `${r.job.id}::${r.carIndex}`;
-  const vehicle = r.job.vehicles[r.carIndex];
-  const isExpanded = expandedCards.has(key);
-  
-  const [editingDriver, setEditingDriver] = React.useState(false);
-  const [editingPutIn, setEditingPutIn] = React.useState(false);
-  const [editingTakeOut, setEditingTakeOut] = React.useState(false);
-
-  return (
-    <div
-      draggable
-      onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', key); }}
-      onClick={(e) => {
-        // Don't expand when dragging or clicking on inputs
-        if (e.defaultPrevented || (e.target as HTMLElement).tagName === 'SELECT') return;
-        const newExpanded = new Set(expandedCards);
-        if (isExpanded) {
-          newExpanded.delete(key);
-        } else {
-          newExpanded.add(key);
-        }
-        setExpandedCards(newExpanded);
-      }}
-      className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm hover:shadow cursor-pointer select-none transition-all"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <div className="font-semibold text-sm text-slate-900 truncate">{r.job.customer}</div>
-            <div className="text-xs text-slate-400">#{r.carIndex+1}</div>
-            {r.leg && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                r.leg === 'A' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-green-100 text-green-700 border border-green-300'
-              }`}>
-                LEG {r.leg}
-              </span>
-            )}
-          </div>
-          <div className="text-xs text-slate-600 leading-tight space-y-0.5">
-            {r.leg ? (
-              // Main Salmon Two-Leg System
-              <>
-                <div className="font-medium">
-                  {r.leg === 'A' ? '🚀' : '🏁'} {r.leg === 'A' ? `${r.job.putInLocation} → ${r.job.handoffLocation}` : `${r.job.handoffLocation} → ${r.job.takeOutLocation}`}
-                </div>
-                <div>
-                  <span className="inline-block mr-2">📅 {fmt(r.legDate || r.deliveryISO)}</span>
-                  <span className="inline-block text-blue-600 font-medium">👤 {r.driver}</span>
-                </div>
-              </>
-            ) : (
-              // Middle Fork Single-Leg System
-              <>
-                <div>
-                  <span className="inline-block mr-2">🚀 Launch: {fmt(r.job.putIn)} @ {r.job.putInLocation}</span>
-                </div>
-                <div>
-                  <span className="inline-block mr-2">🏁 Take-out: {fmt(r.job.takeOut)} @ {r.job.takeOutLocation}</span>
-                </div>
-                <div>
-                  <span className="inline-block text-blue-600 font-medium">👤 Driver: {r.driver}</span>
-                </div>
-              </>
-            )}
+      {/* Header */}
+      <div className="rounded-2xl border p-4 bg-white flex items-center justify-between">
+        <div>
+          <div className="text-xl font-bold">{route?.name} — Dispatch</div>
+          <div className="mt-2 flex flex-wrap gap-2 text-sm">
+            <span className="px-2 py-1 rounded border bg-slate-50">Cars to move: {carsToMove}</span>
+            <span className="px-2 py-1 rounded border bg-slate-50">Overbooked days: {overbookedDays.length}</span>
           </div>
         </div>
-        <span className={`px-1.5 py-0.5 rounded text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMode("list")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>List</button>
+          <button onClick={() => setMode("timeline")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'timeline' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>Timeline</button>
+          <button disabled={exportBlocked} className={`px-3 py-2 rounded-xl border text-sm ${exportBlocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}>Export</button>
+        </div>
       </div>
-      
-      {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs" onClick={(e) => e.stopPropagation()}>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-slate-500">Vehicle:</span>
-              <div className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</div>
-            </div>
-            <div>
-              <span className="text-slate-500">Color:</span>
-              <div>{vehicle.color}</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-slate-500">License Plate:</span>
-              <div className="font-mono font-medium">{vehicle.licensePlate}</div>
-            </div>
-            <div>
-              <span className="text-slate-500">Owner:</span>
-              <div>{vehicle.owner}</div>
-            </div>
-          </div>
-          
-          <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-slate-500">Put-in Location:</span>
-              {!editingPutIn && <button onClick={() => setEditingPutIn(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
-            </div>
-            {editingPutIn ? (
-              <select 
-                value={r.job.putInLocation}
-                onChange={(e) => {
-                  onUpdateLocations(r.job.id, e.target.value, r.job.takeOutLocation);
-                  setEditingPutIn(false);
-                }}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
-                autoFocus
-              >
-                {PUT_IN_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
-            ) : (
-              <div className="font-medium text-green-700">📍 {r.job.putInLocation}</div>
-            )}
-          </div>
-          
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-slate-500">Take-out Location:</span>
-              {!editingTakeOut && <button onClick={() => setEditingTakeOut(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
-            </div>
-            {editingTakeOut ? (
-              <select 
-                value={r.job.takeOutLocation}
-                onChange={(e) => {
-                  onUpdateLocations(r.job.id, r.job.putInLocation, e.target.value);
-                  setEditingTakeOut(false);
-                }}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
-                autoFocus
-              >
-                {TAKE_OUT_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
-            ) : (
-              <div className="font-medium text-green-700">📍 {r.job.takeOutLocation}</div>
-            )}
-          </div>
-          
-          <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-slate-500">Driver Assigned:</span>
-              {!editingDriver && <button onClick={() => setEditingDriver(true)} className="text-blue-600 hover:text-blue-700 text-xs">Edit</button>}
-            </div>
-            {editingDriver ? (
-              <select 
-                value={r.driver}
-                onChange={(e) => {
-                  onUpdateDriver(r.job.id, r.carIndex, e.target.value);
-                  setEditingDriver(false);
-                }}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
-                autoFocus
-              >
-                {DRIVERS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            ) : (
-              <div className="font-medium text-blue-600">{r.driver}</div>
-            )}
-          </div>
-          
-          <div>
-            <span className="text-slate-500">Delivery Date:</span>
-            <div>{fmt(r.deliveryISO)} {r.overflow && <span className="ml-1 text-amber-700">⚠️ overflow</span>}</div>
-          </div>
-          <div>
-            <span className="text-slate-500">Key Location:</span>
-            <div className="font-medium text-green-700">🔑 Office Key Box - Slot #{Math.floor(Math.random() * 20) + 1}</div>
-          </div>
+
+      {/* Checks Panel */}
+      {issues.length > 0 && (
+        <div className="rounded-2xl border p-4 bg-amber-50 text-amber-900">
+          <div className="font-semibold mb-1">Checks</div>
+          <ul className="list-disc list-inside text-sm space-y-1">
+            {issues.map((i, idx) => (
+              <li key={idx} className={i.level === 'error' ? 'text-red-800' : ''}>{i.message}</li>
+            ))}
+          </ul>
         </div>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main */}
+        <div className="lg:col-span-2 space-y-6">
+          {mode === 'list' ? (
+            <ListMode jobs={jobs} currentDate={currentDate} />
+          ) : (
+            <TimelineMode jobs={jobs} currentDate={currentDate} />
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div>
+          <CapacityPanel capacityByDay={byDayCapacity} overbookedDays={overbookedDays} todayISO={currentDate} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function DayDropZone({ children, onDropVehicle }: { children: React.ReactNode; onDropVehicle: (key: string)=>void }){
-  return (
-    <div
-      onDragOver={(e)=>e.preventDefault()}
-      onDrop={(e)=>{ e.preventDefault(); const key = e.dataTransfer.getData('text/plain'); if(key) onDropVehicle(key); }}
-      className="rounded-xl border border-slate-200 p-3"
-    >
-      {children}
-    </div>
-  );
-}
+/* ---------------- List View ---------------- */
 
-function CalendarGrid({ days, onDayClick }: { days: { iso: string; used: number }[]; onDayClick: (dayISO: string) => void }) {
+function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
+  // group by earliest leg date
+  const groups = useMemo(() => {
+    const map = new Map<string, Job[]>();
+    for (const j of jobs) {
+      const d = j.legs[0].date;
+      const arr = map.get(d) || [];
+      arr.push(j);
+      map.set(d, arr);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  }, [jobs]);
+
+  function pillFor(leg: Leg) {
+    const days = daysBetween(currentDate, leg.date);
+    const cls = urgencyClass(days);
+    const label = days <= 0 ? "Due" : days + "d";
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${cls}`}>{label}</span>;
+  }
+
   return (
-    <div className="grid grid-cols-7 gap-3">
-      {days.map((d) => (
-        <div 
-          key={d.iso} 
-          className={`rounded-xl p-3 border text-sm cursor-pointer hover:shadow-md transition-all ${
-            d.used > 7 ? 'border-red-400 bg-red-50 hover:bg-red-100' : 
-            d.used === 7 ? 'border-amber-400 bg-amber-50 hover:bg-amber-100' : 
-            'border-emerald-400 bg-emerald-50 hover:bg-emerald-100'
-          }`}
-          onClick={() => onDayClick(d.iso)}
-        >
-          <div className="text-xs font-semibold mb-1">{fmt(d.iso)}</div>
-          <div className="text-lg font-bold">{d.used}/7</div>
-          {d.used > 7 && <div className="text-[11px] mt-1 text-red-700">Over by {d.used - 7}</div>}
-          {d.used > 7 && <div className="text-[10px] text-red-600 mt-1">Click to see issues</div>}
+    <div className="space-y-6">
+      {groups.map(([dateISO, arr]) => (
+        <div key={dateISO} className="rounded-2xl border bg-white">
+          <div className="flex items-center justify-between p-3 border-b">
+            <div className="font-semibold">{dateISO} — Deliveries</div>
+            <div className="text-xs text-slate-600">{arr.length} jobs</div>
+          </div>
+          <div className="divide-y">
+            {arr.map(job => (
+              <div key={job.id} className="p-3 flex items-center gap-3">
+                <div className="shrink-0 h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-medium">{job.car.owner.charAt(0)}</div>
+                <div className="flex-1">
+                  <div className="font-semibold">{jobNumber(job)}</div>
+                  <div className="text-xs text-slate-600">{job.car.makeModel} • Plate: {job.car.plate}</div>
+                  <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    {job.legs.map((L, idx) => (
+                      <div key={idx} className="rounded border px-2 py-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Leg {L.leg || "?"}</span>
+                          {pillFor(L)}
+                        </div>
+                        <div className="text-xs text-slate-700">{L.startLocation} <span className="mx-1">&rarr;</span> {L.endLocation}</div>
+                        <div className="text-xs text-slate-700">{L.date} {L.depart} - {L.arrive}</div>
+                        <div className="text-xs text-slate-700">Driver: {L.driverId || "Unassigned"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <label className="text-slate-700 self-center">{children}</label>;
+/* ---------------- Timeline View ---------------- */
+
+function TimelineMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
+  const startISO = useMemo(() => {
+    const min = jobs.reduce((acc, j) => Math.min(acc, new Date(j.legs[0].date + "T00:00:00").getTime()), Number.POSITIVE_INFINITY);
+    return iso(new Date(min - 86400000));
+  }, [jobs]);
+  
+  const endISO = useMemo(() => {
+    const max = jobs.reduce((acc, j) => {
+      const lastLegDate = j.legs[j.legs.length - 1].date;
+      return Math.max(acc, new Date(lastLegDate + "T00:00:00").getTime());
+    }, 0);
+    return iso(new Date(max + 86400000));
+  }, [jobs]);
+
+  const totalDays = Math.max(1, daysBetween(startISO, endISO));
+  function clamp(n: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, n)); }
+  function xFor(dateISO: string) { return clamp(daysBetween(startISO, dateISO), 0, totalDays); }
+  function barStyle(x: number) { return { left: `calc(${x} * 100% / ${totalDays + 1})`, width: `calc(100% / ${totalDays + 1})` }; }
+
+  return (
+    <div className="rounded-2xl border bg-white p-4">
+      <div className="font-semibold mb-2">Schedule (Timeline)</div>
+      <div className="relative border-t">
+        <div className="sticky top-0 bg-white/80 backdrop-blur z-10">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${totalDays + 1}, minmax(64px,1fr))` }}>
+            {Array.from({ length: totalDays + 1 }).map((_, i) => (
+              <div key={i} className="text-xs text-slate-600 px-2 py-1 border-r">{addDaysISO(startISO, i)}</div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2 mt-2">
+          {jobs.map(job => {
+            const first = job.legs[0];
+            const second = job.legs[1];
+            const aX = xFor(first.date);
+            const clsA = urgencyClass(daysBetween(currentDate, first.date));
+            const bX = second ? xFor(second.date) : null;
+            const clsB = second ? urgencyClass(daysBetween(currentDate, second.date)) : null;
+
+            return (
+              <div key={job.id} className="border rounded p-2">
+                <div className="text-sm font-semibold mb-1">
+                  {jobNumber(job)} <span className="text-slate-600 font-normal">— {job.car.makeModel} ({job.car.plate})</span>
+                </div>
+                <div className="relative grid" style={{ gridTemplateColumns: `repeat(${totalDays + 1}, minmax(64px,1fr))` }}>
+                  <div
+                    className={`absolute top-1 h-6 rounded border ${clsA}`}
+                    style={barStyle(aX)}
+                    title={"Leg " + (first.leg || "?") + ": " + first.startLocation + " to " + first.endLocation + " on " + first.date}
+                  ></div>
+                  {second && bX !== null && (
+                    <div
+                      className={`absolute top-9 h-6 rounded border ${clsB}`}
+                      style={barStyle(bX)}
+                      title={"Leg " + (second.leg || "?") + ": " + second.startLocation + " to " + second.endLocation + " on " + second.date}
+                    ></div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Sidebar ---------------- */
+
+function CapacityPanel({ capacityByDay, overbookedDays, todayISO }: { 
+  capacityByDay: Map<string, DayCapacity>; 
+  overbookedDays: string[]; 
+  todayISO: string 
+}) {
+  const rows = Array.from(capacityByDay.entries()).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  return (
+    <div className="rounded-2xl border bg-white p-4 space-y-4">
+      <div className="font-semibold">Capacity & Warnings</div>
+      <div className="space-y-2 text-sm">
+        {rows.map(([d, v]) => {
+          const over = v.cars > v.shuttleOnDuty;
+          const cls = over ? "text-red-700" : "text-slate-700";
+          return (
+            <div key={d} className="flex items-center justify-between">
+              <span className={cls}>{d}</span>
+              <span className={cls}>{v.cars} cars / {v.shuttleOnDuty} drivers</span>
+            </div>
+          );
+        })}
+      </div>
+      {overbookedDays.length > 0 && (
+        <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800">
+          <div className="font-medium mb-1">Overbooked</div>
+          <ul className="list-disc list-inside">
+            {overbookedDays.map(d => (<li key={d}>{d}</li>))}
+          </ul>
+        </div>
+      )}
+      <div className="rounded border bg-slate-50 p-2 text-xs text-slate-700">Today: {todayISO}</div>
+    </div>
+  );
 }

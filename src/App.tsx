@@ -1008,21 +1008,21 @@ function VehicleCard({ r, expandedCards, setExpandedCards, onUpdateDriver, onUpd
         }
         setExpandedCards(newExpanded);
       }}
-      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow cursor-pointer select-none transition-all"
+      className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm hover:shadow cursor-pointer select-none transition-all"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="font-semibold text-slate-900">{r.job.customer}</div>
-            <div className="text-xs text-slate-500">• Car {r.carIndex+1}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="font-semibold text-sm text-slate-900 truncate">{r.job.customer}</div>
+            <div className="text-xs text-slate-400">#{r.carIndex+1}</div>
           </div>
-          <div className="text-xs text-slate-600 space-y-0.5">
-            <div>📍 Put-in: {r.job.putInLocation} ({fmt(r.job.putIn)})</div>
-            <div>📍 Take-out: {r.job.takeOutLocation} ({fmt(r.job.takeOut)})</div>
-            <div>👤 Driver: <span className="font-medium text-blue-600">{r.driver}</span></div>
+          <div className="text-xs text-slate-600 leading-tight">
+            <span className="inline-block mr-2">📍 {r.job.putInLocation}</span>
+            <span className="inline-block mr-2">→ {r.job.takeOutLocation}</span>
+            <span className="inline-block text-blue-600 font-medium">👤 {r.driver}</span>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>
+        <span className={`px-1.5 py-0.5 rounded text-xs border whitespace-nowrap ${pillCls}`}>{risk.pill}</span>
       </div>
       
       {isExpanded && (

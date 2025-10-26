@@ -233,9 +233,9 @@ export default function RouteDispatchPage() {
   const [activeRoute, setActiveRoute] = useState("main_salmon");
   const route = DEMO_ROUTES.find(r => r.id === activeRoute);
 
-  // Local state so UI updates in place
-  const [jobs] = useState(DEMO_DATA[activeRoute].jobs);
-  const [drivers] = useState(DEMO_DATA[activeRoute].drivers);
+  // Get data for active route (updates when route changes)
+  const jobs = DEMO_DATA[activeRoute].jobs;
+  const drivers = DEMO_DATA[activeRoute].drivers;
   const currentDate = DEMO_DATA[activeRoute].currentDate;
 
   const { issues, byDayCapacity } = useMemo(

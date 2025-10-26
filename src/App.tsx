@@ -46,6 +46,8 @@ type Car = {
   owner: string;
   makeModel: string;
   plate: string;
+  year: number;
+  color: string;
 };
 
 type Leg = {
@@ -186,7 +188,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       // Two-leg OK
       {
         id: "J-1002",
-        car: { owner: "Wilson", makeModel: "Toyota 4Runner", plate: "ID-7S1234" },
+        car: { owner: "Wilson", makeModel: "Toyota 4Runner", plate: "ID-7S1234", year: 2019, color: "Silver" },
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:30", arrive: "10:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:30", driverId: "D3" },
@@ -195,7 +197,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       // Single-leg OK (no leg designation needed)
       {
         id: "J-2001",
-        car: { owner: "Solo", makeModel: "Chevy Tahoe", plate: "OR-9XY123" },
+        car: { owner: "Solo", makeModel: "Chevy Tahoe", plate: "OR-9XY123", year: 2021, color: "Black" },
         legs: [
           { startLocation: "Corn Creek", endLocation: "Hammer Creek", date: "2025-10-28", depart: "08:00", arrive: "12:15", driverId: "D1" },
         ],
@@ -203,7 +205,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       // Two-leg: bad (same-day B + missing driver on B) -> error + warn
       {
         id: "J-1003",
-        car: { owner: "Ramirez", makeModel: "Ford F-150", plate: "WA-C56789B" },
+        car: { owner: "Ramirez", makeModel: "Ford F-150", plate: "WA-C56789B", year: 2018, color: "Blue" },
         legs: [
           { leg: "A", startLocation: "Indian Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:00", arrive: "11:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "12:15", arrive: "17:00" },
@@ -218,7 +220,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       // Single-leg example (common on some routes) - no leg designation needed
       {
         id: "MF-42",
-        car: { owner: "Johnson", makeModel: "Jeep Grand Cherokee", plate: "ID-3A009X" },
+        car: { owner: "Johnson", makeModel: "Jeep Grand Cherokee", plate: "ID-3A009X", year: 2020, color: "White" },
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
@@ -378,13 +380,18 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
                   <div className="font-bold text-lg">{job.car.owner}</div>
                   {pillFor(mostUrgentLeg)}
                 </div>
-                <div className="text-sm text-slate-700">
-                  <span className="font-medium">{job.car.makeModel}</span>
-                  <span className="mx-2">•</span>
-                  <span className="font-mono">{job.car.plate}</span>
+                <div className="text-sm text-slate-700 space-y-0.5">
+                  <div>
+                    <span className="font-medium">{job.car.year} {job.car.makeModel}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">{job.car.color}</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="font-mono font-medium">{job.car.plate}</span>
+                  </div>
                 </div>
                 {!isExpanded && (
-                  <div className="text-xs text-slate-600 mt-1">
+                  <div className="text-xs text-slate-500 mt-1">
                     {job.legs.length === 1 ? 'Single delivery' : `${job.legs.length} legs`} • Click to expand
                   </div>
                 )}

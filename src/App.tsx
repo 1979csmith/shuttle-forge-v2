@@ -895,9 +895,14 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
             {/* Expanded View */}
             {isExpanded && (
               <div className="mt-4 pt-4 border-t border-slate-300 space-y-3" onClick={(e) => e.stopPropagation()}>
-                {/* Job Number */}
-                <div className="text-sm text-slate-600">
-                  Job #: <span className="font-mono font-medium">{jobNumber(job)}</span>
+                {/* Job Number & Trip Dates */}
+                <div className="text-sm text-slate-600 space-y-1">
+                  <div>Job #: <span className="font-mono font-medium">{jobNumber(job)}</span></div>
+                  <div className="text-xs">
+                    <span className="font-medium">Launch:</span> {formatMMDDYY(job.tripPutIn)} 
+                    <span className="mx-2">•</span>
+                    <span className="font-medium">Take-out:</span> {formatMMDDYY(job.tripTakeOut)}
+                  </div>
                 </div>
 
                 {/* Legs */}

@@ -403,6 +403,120 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         ],
       },
 
+      // Oct 27 - Leg A moves (5 cars) - FILL GAP
+      {
+        id: "J-1028",
+        car: { owner: "Blake", makeModel: "Toyota Sequoia", plate: "ID-A12345A", year: 2020, color: "White" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-27",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:00", arrive: "16:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "J-1029",
+        car: { owner: "Cole", makeModel: "Chevy Suburban", plate: "MT-B23456B", year: 2021, color: "Black" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-27",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:15", arrive: "16:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "J-1030",
+        car: { owner: "Drake", makeModel: "Ford Bronco Sport", plate: "OR-C34567C", year: 2022, color: "Orange" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-27",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:30", arrive: "17:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "J-1031",
+        car: { owner: "Ellis", makeModel: "Nissan Armada", plate: "WA-D45678D", year: 2019, color: "Blue" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-27",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:00", arrive: "17:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "J-1032",
+        car: { owner: "Flynn", makeModel: "GMC Yukon XL", plate: "ID-E56789E", year: 2020, color: "Silver" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-27",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:15", arrive: "17:45", driverId: "D3" },
+        ],
+      },
+
+      // Oct 29 - Leg A moves (6 cars) - FILL GAP
+      {
+        id: "J-1033",
+        car: { owner: "Grant", makeModel: "Jeep Grand Wagoneer", plate: "MT-F67890F", year: 2023, color: "Gray" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:00", arrive: "16:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "J-1034",
+        car: { owner: "Hayes", makeModel: "Toyota Land Cruiser", plate: "OR-G78901G", year: 2021, color: "White" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:15", arrive: "16:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "J-1035",
+        car: { owner: "Irwin", makeModel: "Lexus LX", plate: "WA-H89012H", year: 2022, color: "Black" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:30", arrive: "17:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "J-1036",
+        car: { owner: "James", makeModel: "Ford Expedition Max", plate: "ID-I90123I", year: 2020, color: "Red" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:00", arrive: "17:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "J-1037",
+        car: { owner: "Kelly", makeModel: "Cadillac Escalade", plate: "MT-J01234J", year: 2021, color: "Pearl" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:15", arrive: "17:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "J-1038",
+        car: { owner: "Lewis", makeModel: "Lincoln Aviator", plate: "OR-K12345K", year: 2022, color: "Blue" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:30", arrive: "18:00", driverId: "D1" },
+        ],
+      },
+
       // Nov 1 - Leg A moves (6 cars)
       {
         id: "J-1022",

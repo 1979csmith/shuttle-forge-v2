@@ -256,7 +256,8 @@ export default function RouteDispatchPage() {
   const hasErrors = issues.some(i => i.level === "error");
   const exportBlocked = hasErrors;
 
-  const [mode, setMode] = useState<"list" | "timeline">("list");
+  const [mode, setMode] = useState<"list" | "timeline" | "calendar">("list");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   return (
     <div className="p-6 max-w-7xl mx-auto font-sans space-y-6">
@@ -284,6 +285,7 @@ export default function RouteDispatchPage() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setMode("list")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>List</button>
+          <button onClick={() => setMode("calendar")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'calendar' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>Calendar</button>
           <button onClick={() => setMode("timeline")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'timeline' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>Timeline</button>
           <button disabled={exportBlocked} className={`px-3 py-2 rounded-xl border text-sm ${exportBlocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}>Export</button>
         </div>
@@ -304,15 +306,16 @@ export default function RouteDispatchPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
-          {mode === 'list' ? (
-            <ListMode jobs={jobs} currentDate={currentDate} />
-          ) : (
-            <TimelineMode jobs={jobs} currentDate={currentDate} />
-          )}
+          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} />}
+          {mode === 'calendar' && <CalendarView jobs={jobs} currentDate={currentDate} onSelectJob={setSelectedJob} />}
+          {mode === 'timeline' && <TimelineMode jobs={jobs} currentDate={currentDate} />}
         </div>
 
         {/* Sidebar */}
-        <div>
+        <div className="space-y-4">
+          {mode === 'calendar' && selectedJob && (
+            <JobDetailsPanel job={selectedJob} currentDate={currentDate} onClose={() => setSelectedJob(null)} />
+          )}
           <CapacityPanel capacityByDay={byDayCapacity} overbookedDays={overbookedDays} todayISO={currentDate} />
         </div>
       </div>
@@ -447,6 +450,215 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ---------------- Calendar View ---------------- */
+
+function CalendarView({ jobs, currentDate, onSelectJob }: { 
+  jobs: Job[]; 
+  currentDate: string; 
+  onSelectJob: (job: Job) => void 
+}) {
+  // Get date range from jobs
+  const { startDate, endDate } = useMemo(() => {
+    if (jobs.length === 0) {
+      return { startDate: currentDate, endDate: addDaysISO(currentDate, 30) };
+    }
+    let min = jobs[0].legs[0].date;
+    let max = jobs[0].legs[jobs[0].legs.length - 1].date;
+    
+    for (const job of jobs) {
+      for (const leg of job.legs) {
+        if (leg.date < min) min = leg.date;
+        if (leg.date > max) max = leg.date;
+      }
+    }
+    
+    // Add padding
+    return { 
+      startDate: addDaysISO(min, -1), 
+      endDate: addDaysISO(max, 7) 
+    };
+  }, [jobs, currentDate]);
+
+  // Group jobs by date
+  const jobsByDate = useMemo(() => {
+    const map = new Map<string, { job: Job; leg: Leg }[]>();
+    
+    for (const job of jobs) {
+      for (const leg of job.legs) {
+        const arr = map.get(leg.date) || [];
+        arr.push({ job, leg });
+        map.set(leg.date, arr);
+      }
+    }
+    
+    return map;
+  }, [jobs]);
+
+  // Generate calendar days
+  const calendarDays = useMemo(() => {
+    const days: string[] = [];
+    let current = startDate;
+    
+    while (current <= endDate) {
+      days.push(current);
+      current = addDaysISO(current, 1);
+    }
+    
+    return days;
+  }, [startDate, endDate]);
+
+  function urgencyForJob(job: Job, currentDate: string) {
+    const mostUrgent = job.legs.reduce((mostUrgent, leg) => {
+      const days = daysBetween(currentDate, leg.date);
+      const mostUrgentDays = daysBetween(currentDate, mostUrgent.date);
+      return days < mostUrgentDays ? leg : mostUrgent;
+    }, job.legs[0]);
+    
+    const days = daysBetween(currentDate, mostUrgent.date);
+    return days;
+  }
+
+  return (
+    <div className="rounded-2xl border bg-white p-4">
+      <div className="font-semibold mb-4">Calendar View</div>
+      <div className="space-y-2">
+        {calendarDays.map(date => {
+          const dayJobs = jobsByDate.get(date) || [];
+          const isToday = date === currentDate;
+          
+          return (
+            <div key={date} className={`rounded-lg border ${isToday ? 'border-blue-400 bg-blue-50' : 'border-slate-200'} p-3`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-semibold text-sm">
+                  {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {isToday && <span className="ml-2 text-xs text-blue-600">Today</span>}
+                </div>
+                <div className="text-xs text-slate-500">{dayJobs.length} {dayJobs.length === 1 ? 'delivery' : 'deliveries'}</div>
+              </div>
+              
+              {dayJobs.length > 0 ? (
+                <div className="space-y-2">
+                  {dayJobs.map(({ job, leg }, idx) => {
+                    const urgentDays = urgencyForJob(job, currentDate);
+                    const bgClass = urgentDays <= 0 ? 'bg-red-100 border-red-300' : 
+                                   urgentDays <= 3 ? 'bg-amber-100 border-amber-300' : 
+                                   'bg-slate-50 border-slate-200';
+                    
+                    return (
+                      <div
+                        key={`${job.id}-${idx}`}
+                        className={`rounded border ${bgClass} p-2 cursor-pointer hover:shadow-md transition-all`}
+                        onClick={() => onSelectJob(job)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="shrink-0 h-8 w-8 rounded bg-slate-700 text-white flex items-center justify-center text-xs font-bold">
+                            {job.car.owner.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm">{job.car.owner}</div>
+                            <div className="text-xs text-slate-600 truncate">{job.car.year} {job.car.makeModel}</div>
+                          </div>
+                          {job.legs.length > 1 && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                              Leg {leg.leg || '?'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 text-center py-2">No deliveries</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Job Details Panel ---------------- */
+
+function JobDetailsPanel({ job, currentDate, onClose }: { 
+  job: Job; 
+  currentDate: string; 
+  onClose: () => void 
+}) {
+  function pillFor(leg: Leg) {
+    const days = daysBetween(currentDate, leg.date);
+    const cls = urgencyClass(days);
+    const label = days <= 0 ? "Due" : days + "d";
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${cls}`}>{label}</span>;
+  }
+
+  return (
+    <div className="rounded-2xl border bg-white p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="font-semibold">Job Details</div>
+        <button 
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Vehicle Info */}
+      <div className="mb-4 pb-4 border-b">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-12 w-12 rounded-lg bg-slate-700 text-white flex items-center justify-center text-lg font-bold">
+            {job.car.owner.charAt(0)}
+          </div>
+          <div>
+            <div className="font-bold text-lg">{job.car.owner}</div>
+            <div className="text-sm text-slate-600">Job #{jobNumber(job)}</div>
+          </div>
+        </div>
+        <div className="space-y-1 text-sm">
+          <div><span className="text-slate-500">Vehicle:</span> <span className="font-medium">{job.car.year} {job.car.makeModel}</span></div>
+          <div><span className="text-slate-500">Color:</span> {job.car.color}</div>
+          <div><span className="text-slate-500">Plate:</span> <span className="font-mono font-medium">{job.car.plate}</span></div>
+        </div>
+      </div>
+
+      {/* Legs */}
+      <div className="space-y-3">
+        <div className="font-semibold text-sm">Delivery Schedule</div>
+        {job.legs.map((leg, idx) => (
+          <div key={idx} className="rounded-lg border border-slate-300 bg-slate-50 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-sm">
+                {job.legs.length > 1 ? `Leg ${leg.leg || '?'}` : 'Delivery'}
+              </span>
+              {pillFor(leg)}
+            </div>
+            <div className="space-y-1 text-xs text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Route:</span>
+                <span className="font-medium">{leg.startLocation} → {leg.endLocation}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Date:</span>
+                <span className="font-medium">{leg.date}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Time:</span>
+                <span>{leg.depart} - {leg.arrive}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Driver:</span>
+                <span className="font-medium text-blue-600">{leg.driverId || 'Unassigned'}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

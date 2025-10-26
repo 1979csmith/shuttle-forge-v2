@@ -964,6 +964,30 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
     });
   }, [jobs, currentDate, daysAhead]);
 
+  // Group jobs by their earliest leg date
+  const jobsByDate = useMemo(() => {
+    const grouped = new Map<string, Job[]>();
+    
+    for (const job of filteredJobs) {
+      // Find earliest leg date for this job
+      const earliestDate = job.legs.reduce((earliest, leg) => {
+        return leg.date < earliest ? leg.date : earliest;
+      }, job.legs[0].date);
+      
+      if (!grouped.has(earliestDate)) {
+        grouped.set(earliestDate, []);
+      }
+      grouped.get(earliestDate)!.push(job);
+    }
+    
+    // Sort dates
+    const sortedDates = Array.from(grouped.keys()).sort();
+    return sortedDates.map(date => ({
+      date,
+      jobs: grouped.get(date)!
+    }));
+  }, [filteredJobs]);
+
   return (
     <div className="space-y-3">
       {/* Filter Controls */}
@@ -990,7 +1014,35 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
         </div>
       </div>
       
-      {filteredJobs.map(job => {
+      {/* Jobs grouped by date */}
+      {jobsByDate.map(({ date, jobs: dateJobs }) => {
+        const isToday = date === currentDate;
+        const dateObj = new Date(date + 'T00:00:00');
+        const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
+        const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        
+        return (
+          <div key={date} className="space-y-3">
+            {/* Date Header */}
+            <div className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
+              isToday 
+                ? 'bg-blue-100 border-blue-400 text-blue-900' 
+                : 'bg-slate-100 border-slate-300 text-slate-800'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-lg">{dayName}</div>
+                  <div className="text-sm">{dateStr}</div>
+                </div>
+                <div className="text-sm font-semibold">
+                  {dateJobs.length} {dateJobs.length === 1 ? 'job' : 'jobs'}
+                  {isToday && <span className="ml-2 px-2 py-1 rounded-full bg-blue-600 text-white text-xs">TODAY</span>}
+                </div>
+              </div>
+            </div>
+            
+            {/* Jobs for this date */}
+            {dateJobs.map(job => {
         const isExpanded = expandedJobs.has(job.id);
         const mostUrgentLeg = getMostUrgentLeg(job);
         const urgentDays = daysBetween(currentDate, mostUrgentLeg.date);
@@ -1086,6 +1138,9 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
                 </div>
               </div>
             )}
+          </div>
+        );
+      })}
           </div>
         );
       })}

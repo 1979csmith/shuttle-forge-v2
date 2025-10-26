@@ -384,10 +384,19 @@ export default function ShuttleForge() {
   }, [rowsInRange]);
 
   // Integrity checks
+  // For Main Salmon, each car creates 2 rows (Leg A and Leg B), so we need to count unique cars
   const jobToScheduledCount = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const r of scheduledRows) map[r.job.id] = (map[r.job.id] || 0) + 1;
-    return map;
+    const map: Record<string, Set<number>> = {};
+    for (const r of scheduledRows) {
+      if (!map[r.job.id]) map[r.job.id] = new Set();
+      map[r.job.id].add(r.carIndex);
+    }
+    // Convert Sets to counts
+    const counts: Record<string, number> = {};
+    for (const [jobId, carSet] of Object.entries(map)) {
+      counts[jobId] = carSet.size;
+    }
+    return counts;
   }, [scheduledRows]);
 
   const reconciliationIssues = useMemo(() => {

@@ -64,6 +64,8 @@ type Job = {
   id: string;
   car: Car;
   legs: Leg[];
+  tripPutIn: string;   // Launch date (ISO)
+  tripTakeOut: string; // Take-out date (ISO)
 };
 
 type Driver = {
@@ -189,6 +191,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1001",
         car: { owner: "Anderson", makeModel: "Toyota 4Runner", plate: "ID-7S1234", year: 2019, color: "Silver" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:00", arrive: "10:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:00", arrive: "16:30", driverId: "D2" },
@@ -197,6 +201,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1002",
         car: { owner: "Bennett", makeModel: "Subaru Outback", plate: "WA-K9X22A", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:15", arrive: "10:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:45", driverId: "D3" },
@@ -205,6 +211,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1003",
         car: { owner: "Chen", makeModel: "Ford F-150", plate: "OR-8TRP921", year: 2018, color: "Red" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:30", arrive: "11:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:30", arrive: "17:00", driverId: "D1" },
@@ -213,6 +221,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1004",
         car: { owner: "Davis", makeModel: "Jeep Wrangler", plate: "ID-3A009X", year: 2021, color: "Green" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:00", arrive: "11:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:00", arrive: "17:30", driverId: "D2" },
@@ -221,6 +231,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1005",
         car: { owner: "Evans", makeModel: "Ram 1500", plate: "MT-C56789B", year: 2019, color: "Black" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:15", arrive: "11:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:15", arrive: "17:45", driverId: "D3" },
@@ -229,6 +241,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1006",
         car: { owner: "Foster", makeModel: "Chevy Silverado", plate: "WY-D12345C", year: 2022, color: "White" },
+        tripPutIn: "2025-10-20",
+        tripTakeOut: "2025-10-26",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:30", arrive: "12:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:30", arrive: "18:00", driverId: "D1" },
@@ -239,6 +253,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1007",
         car: { owner: "Garcia", makeModel: "Toyota Tacoma", plate: "ID-E67890D", year: 2020, color: "Gray" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:00", arrive: "10:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:00", arrive: "16:30", driverId: "D2" },
@@ -247,6 +263,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1008",
         car: { owner: "Harris", makeModel: "Honda Pilot", plate: "OR-F78901E", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:15", arrive: "10:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:15", arrive: "16:45", driverId: "D3" },
@@ -255,6 +273,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1009",
         car: { owner: "Ingram", makeModel: "GMC Sierra", plate: "WA-G89012F", year: 2019, color: "Blue" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:30", arrive: "11:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:30", arrive: "17:00", driverId: "D1" },
@@ -263,6 +283,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1010",
         car: { owner: "Jackson", makeModel: "Nissan Frontier", plate: "MT-H90123G", year: 2020, color: "Red" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:00", arrive: "11:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:00", arrive: "17:30", driverId: "D2" },
@@ -271,6 +293,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1011",
         car: { owner: "Kim", makeModel: "Ford Ranger", plate: "ID-I01234H", year: 2022, color: "Orange" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:15", arrive: "11:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:15", arrive: "17:45", driverId: "D3" },
@@ -279,6 +303,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1012",
         car: { owner: "Lopez", makeModel: "Jeep Gladiator", plate: "OR-J12345I", year: 2021, color: "Yellow" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:30", arrive: "12:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:30", arrive: "18:00", driverId: "D1" },
@@ -287,6 +313,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1013",
         car: { owner: "Martinez", makeModel: "Toyota Tundra", plate: "WA-K23456J", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:45", arrive: "12:15", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:45", arrive: "18:15", driverId: "D2" },
@@ -297,6 +325,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1014",
         car: { owner: "Nelson", makeModel: "Chevy Colorado", plate: "MT-L34567K", year: 2019, color: "White" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:00", arrive: "10:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:00", arrive: "16:30", driverId: "D2" },
@@ -305,6 +335,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1015",
         car: { owner: "O'Brien", makeModel: "Ford Explorer", plate: "ID-M45678L", year: 2021, color: "Gray" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:15", arrive: "10:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:15", arrive: "16:45", driverId: "D3" },
@@ -313,6 +345,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1016",
         car: { owner: "Parker", makeModel: "Ram 2500", plate: "OR-N56789M", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:30", arrive: "11:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:30", arrive: "17:00", driverId: "D1" },
@@ -321,6 +355,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1017",
         car: { owner: "Quinn", makeModel: "Subaru Forester", plate: "WA-O67890N", year: 2022, color: "Green" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:00", arrive: "11:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:00", arrive: "17:30", driverId: "D2" },
@@ -329,6 +365,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1018",
         car: { owner: "Roberts", makeModel: "Jeep Cherokee", plate: "MT-P78901O", year: 2019, color: "Red" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:15", arrive: "11:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:15", arrive: "17:45", driverId: "D3" },
@@ -337,6 +375,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1019",
         car: { owner: "Smith", makeModel: "Toyota Highlander", plate: "ID-Q89012P", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:30", arrive: "12:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:30", arrive: "18:00", driverId: "D1" },
@@ -345,6 +385,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1020",
         car: { owner: "Taylor", makeModel: "GMC Yukon", plate: "OR-R90123Q", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:45", arrive: "12:15", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:45", arrive: "18:15", driverId: "D2" },
@@ -353,6 +395,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1021",
         car: { owner: "Underwood", makeModel: "Ford Expedition", plate: "WA-S01234R", year: 2022, color: "White" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-30",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "09:00", arrive: "12:30", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "13:00", arrive: "18:30", driverId: "D3" },
@@ -363,6 +407,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1022",
         car: { owner: "Valdez", makeModel: "Chevy Tahoe", plate: "MT-T12345S", year: 2019, color: "Gray" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:00", arrive: "10:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:00", arrive: "16:30", driverId: "D2" },
@@ -371,6 +417,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1023",
         car: { owner: "Watson", makeModel: "Nissan Pathfinder", plate: "ID-U23456T", year: 2021, color: "Blue" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:15", arrive: "10:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:15", arrive: "16:45", driverId: "D3" },
@@ -379,6 +427,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1024",
         car: { owner: "Xavier", makeModel: "Honda CR-V", plate: "OR-V34567U", year: 2020, color: "Red" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:30", arrive: "11:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:30", arrive: "17:00", driverId: "D1" },
@@ -387,6 +437,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1025",
         car: { owner: "Young", makeModel: "Mazda CX-5", plate: "WA-W45678V", year: 2022, color: "Silver" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:00", arrive: "11:30", driverId: "D1" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:00", arrive: "17:30", driverId: "D2" },
@@ -395,6 +447,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1026",
         car: { owner: "Zhang", makeModel: "Hyundai Santa Fe", plate: "MT-X56789W", year: 2019, color: "Green" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:15", arrive: "11:45", driverId: "D2" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:15", arrive: "17:45", driverId: "D3" },
@@ -403,6 +457,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "J-1027",
         car: { owner: "Adams", makeModel: "Kia Sorento", plate: "ID-Y67890X", year: 2021, color: "Black" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-11-01",
         legs: [
           { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:30", arrive: "12:00", driverId: "D3" },
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:30", arrive: "18:00", driverId: "D1" },
@@ -418,6 +474,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-101",
         car: { owner: "Baker", makeModel: "Jeep Grand Cherokee", plate: "ID-3A009X", year: 2020, color: "White" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-26",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:15", arrive: "12:30", driverId: "D1" },
         ],
@@ -425,6 +483,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-102",
         car: { owner: "Carter", makeModel: "Toyota 4Runner", plate: "MT-4B110Y", year: 2019, color: "Silver" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-26",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:30", arrive: "12:45", driverId: "D2" },
         ],
@@ -432,6 +492,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-103",
         car: { owner: "Diaz", makeModel: "Ford Bronco", plate: "OR-5C221Z", year: 2021, color: "Blue" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-26",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:00", arrive: "13:15", driverId: "D3" },
         ],
@@ -439,6 +501,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-104",
         car: { owner: "Ellis", makeModel: "Chevy Blazer", plate: "WA-6D332A", year: 2020, color: "Red" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-26",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:15", arrive: "13:30", driverId: "D1" },
         ],
@@ -446,6 +510,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-105",
         car: { owner: "Fisher", makeModel: "GMC Acadia", plate: "ID-7E443B", year: 2022, color: "Gray" },
+        tripPutIn: "2025-10-21",
+        tripTakeOut: "2025-10-26",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:30", arrive: "13:45", driverId: "D2" },
         ],
@@ -455,6 +521,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-106",
         car: { owner: "Grant", makeModel: "Subaru Ascent", plate: "MT-8F554C", year: 2021, color: "Green" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
@@ -462,6 +530,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-107",
         car: { owner: "Hayes", makeModel: "Honda Passport", plate: "OR-9G665D", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
@@ -469,6 +539,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-108",
         car: { owner: "Irwin", makeModel: "Nissan Armada", plate: "WA-0H776E", year: 2019, color: "White" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
@@ -476,6 +548,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-109",
         car: { owner: "James", makeModel: "Toyota Sequoia", plate: "ID-1I887F", year: 2022, color: "Silver" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
@@ -483,6 +557,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-110",
         car: { owner: "Kelly", makeModel: "Ford Edge", plate: "MT-2J998G", year: 2021, color: "Blue" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
@@ -490,6 +566,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-111",
         car: { owner: "Lewis", makeModel: "Chevy Traverse", plate: "OR-3K009H", year: 2020, color: "Red" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-27",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
@@ -499,6 +577,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-112",
         car: { owner: "Morgan", makeModel: "Jeep Compass", plate: "WA-4L110I", year: 2019, color: "Gray" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
@@ -506,6 +586,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-113",
         car: { owner: "Nash", makeModel: "Ram ProMaster", plate: "ID-5M221J", year: 2021, color: "White" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
@@ -513,6 +595,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-114",
         car: { owner: "Owen", makeModel: "Toyota Land Cruiser", plate: "MT-6N332K", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
@@ -520,6 +604,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-115",
         car: { owner: "Price", makeModel: "Subaru Crosstrek", plate: "OR-7O443L", year: 2022, color: "Orange" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
@@ -527,6 +613,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-116",
         car: { owner: "Reed", makeModel: "Honda Ridgeline", plate: "WA-8P554M", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
@@ -534,6 +622,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-117",
         car: { owner: "Scott", makeModel: "GMC Terrain", plate: "ID-9Q665N", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
@@ -541,6 +631,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-118",
         car: { owner: "Turner", makeModel: "Mazda CX-9", plate: "MT-0R776O", year: 2019, color: "Green" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:45", arrive: "14:00", driverId: "D1" },
         ],
@@ -550,6 +642,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-119",
         car: { owner: "Upton", makeModel: "Volkswagen Atlas", plate: "OR-1S887P", year: 2021, color: "Red" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
@@ -557,6 +651,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-120",
         car: { owner: "Vega", makeModel: "Buick Enclave", plate: "WA-2T998Q", year: 2020, color: "Gray" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
@@ -564,6 +660,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-121",
         car: { owner: "Ward", makeModel: "Cadillac XT5", plate: "ID-3U009R", year: 2022, color: "Black" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
@@ -571,6 +669,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-122",
         car: { owner: "York", makeModel: "Lincoln Navigator", plate: "MT-4V110S", year: 2021, color: "White" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
@@ -578,6 +678,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-123",
         car: { owner: "Zimmerman", makeModel: "Acura MDX", plate: "OR-5W221T", year: 2020, color: "Silver" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
@@ -585,6 +687,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-124",
         car: { owner: "Allen", makeModel: "Infiniti QX80", plate: "WA-6X332U", year: 2019, color: "Blue" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
@@ -592,6 +696,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-125",
         car: { owner: "Brooks", makeModel: "Lexus GX", plate: "ID-7Y443V", year: 2021, color: "Green" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:45", arrive: "14:00", driverId: "D1" },
         ],
@@ -599,6 +705,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
       {
         id: "MF-126",
         car: { owner: "Cooper", makeModel: "Land Rover Discovery", plate: "MT-8Z554W", year: 2022, color: "Red" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "09:00", arrive: "14:15", driverId: "D2" },
         ],
@@ -939,6 +1047,12 @@ function VehicleCard({ job, currentDate, onClick }: {
         <div className="font-semibold truncate text-xs">{jobNumber(job)}</div>
         <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px]">{label}</span>
       </div>
+      
+      {/* Trip dates */}
+      <div className="text-[9px] text-slate-600 mb-0.5">
+        Launch: {formatMMDDYY(job.tripPutIn)} • Out: {formatMMDDYY(job.tripTakeOut)}
+      </div>
+      
       <div className="text-[10px] text-slate-700 truncate">
         {first.startLocation} → {first.endLocation}
       </div>

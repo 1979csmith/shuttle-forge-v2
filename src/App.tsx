@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import TwoLegView from "./TwoLegView";
 
 // ---- ShuttleForge MVP v0.1 (pure React + Tailwind) ----
 // Single-file, deploy-ready mock with local state only.
@@ -246,6 +247,7 @@ export default function ShuttleForge() {
   const [jobs, setJobs] = useState<Job[]>(demoSeed);
   const [selectedRoute, setSelectedRoute] = useState<string | null>("Main Salmon");
   const [range, setRange] = useState<"3d" | "7d" | "30d">("7d");
+  const [viewMode, setViewMode] = useState<"dispatch" | "twoleg">("dispatch");
 
   const startISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const endISO = useMemo(() => {
@@ -525,9 +527,14 @@ export default function ShuttleForge() {
     });
   }
 
+  // If in two-leg view mode, show that component instead
+  if (viewMode === "twoleg") {
+    return <TwoLegView onBack={() => setViewMode("dispatch")} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
@@ -535,6 +542,14 @@ export default function ShuttleForge() {
             <p className="text-sm text-slate-600">Ultra-lean MVP • Local data only • Ready to demo • v2.0</p>
           </div>
           <div className="flex items-center gap-2">
+            {selectedRoute === "Main Salmon" && (
+              <button
+                onClick={() => setViewMode("twoleg")}
+                className="text-sm rounded-xl px-4 py-2 border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+              >
+                📋 Two-Leg View
+              </button>
+            )}
             <RangeButton label="Next 3 days" active={range === "3d"} onClick={() => setRange("3d")} />
             <RangeButton label="Next 7 days" active={range === "7d"} onClick={() => setRange("7d")} />
             <RangeButton label="Next 30 days" active={range === "30d"} onClick={() => setRange("30d")} />

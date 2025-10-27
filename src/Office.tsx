@@ -72,158 +72,68 @@ export default function Office() {
 
 /* ---------------- Routes & Drivers Panel (Combined) ---------------- */
 
+// Shared driver pool for all routes
+const DRIVER_POOL = [
+  { id: "d1", name: "Mike T.", type: "Shuttle", status: "Active", phone: "(208) 555-0101" },
+  { id: "d2", name: "Sarah K.", type: "Van", status: "Active", phone: "(208) 555-0102" },
+  { id: "d3", name: "Tom R.", type: "Shuttle", status: "Active", phone: "(208) 555-0103" },
+  { id: "d4", name: "Lisa M.", type: "Van", status: "Active", phone: "(208) 555-0104" },
+  { id: "d5", name: "James P.", type: "Shuttle", status: "Off Duty", phone: "(208) 555-0105" },
+  { id: "d6", name: "Carlos R.", type: "Shuttle", status: "Active", phone: "(208) 555-0106" },
+  { id: "d7", name: "Emma W.", type: "Van", status: "Active", phone: "(208) 555-0107" },
+];
+
 function RoutesAndDriversPanel() {
   return (
-    <div className="space-y-8">
-      <RoutesPanel />
-      <DriversPanel />
+    <div className="space-y-6">
+      <RoutesPanel driverPool={DRIVER_POOL} />
+      <DriverPoolPanel />
     </div>
   );
 }
 
-/* ---------------- Drivers Panel ---------------- */
+/* ---------------- Driver Pool Panel ---------------- */
 
-function DriversPanel() {
-  const [drivers, setDrivers] = useState([
-    { id: "d1", name: "Mike T.", type: "Shuttle", status: "Active", phone: "(208) 555-0101" },
-    { id: "d2", name: "Sarah K.", type: "Van", status: "Active", phone: "(208) 555-0102" },
-    { id: "d3", name: "Tom R.", type: "Shuttle", status: "Active", phone: "(208) 555-0103" },
-    { id: "d4", name: "Lisa M.", type: "Van", status: "Active", phone: "(208) 555-0104" },
-    { id: "d5", name: "James P.", type: "Shuttle", status: "Off Duty", phone: "(208) 555-0105" },
-  ]);
-
-  const [showAddDriver, setShowAddDriver] = useState(false);
-  const [newDriver, setNewDriver] = useState({ name: "", type: "Shuttle", phone: "" });
-
-  function addDriver() {
-    if (!newDriver.name) return;
-    const id = `d${drivers.length + 1}`;
-    setDrivers([...drivers, { id, ...newDriver, status: "Active" }]);
-    setNewDriver({ name: "", type: "Shuttle", phone: "" });
-    setShowAddDriver(false);
-  }
-
-  function removeDriver(id: string) {
-    if (confirm("Remove this driver?")) {
-      setDrivers(drivers.filter(d => d.id !== id));
-    }
-  }
-
+function DriverPoolPanel() {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Driver Management</h3>
-        <button
-          onClick={() => setShowAddDriver(true)}
-          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
-        >
-          + Add Driver
-        </button>
-      </div>
-
-      {/* Drivers Table */}
-      <div className="rounded-2xl border bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-700">
-            <tr>
-              <th className="text-left font-semibold px-4 py-3">Name</th>
-              <th className="text-left font-semibold px-4 py-3">Type</th>
-              <th className="text-left font-semibold px-4 py-3">Phone</th>
-              <th className="text-left font-semibold px-4 py-3">Status</th>
-              <th className="text-left font-semibold px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drivers.map(driver => (
-              <tr key={driver.id} className="border-t">
-                <td className="px-4 py-3 font-medium">{driver.name}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    driver.type === "Van" ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-blue-50 text-blue-700 border border-blue-200"
-                  }`}>
-                    {driver.type}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{driver.phone}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    driver.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-50 text-slate-700 border border-slate-200"
-                  }`}>
-                    {driver.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => removeDriver(driver.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Add Driver Modal */}
-      {showAddDriver && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Add New Driver</h3>
-              <button onClick={() => setShowAddDriver(false)} className="text-slate-500 hover:text-slate-700">✕</button>
+    <div className="rounded-2xl border bg-white p-4">
+      <h3 className="text-lg font-semibold mb-3">Available Driver Pool</h3>
+      <p className="text-sm text-slate-600 mb-4">
+        All drivers available for assignment. Assign them to specific routes above.
+      </p>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {DRIVER_POOL.map(driver => (
+          <div key={driver.id} className="border rounded-xl p-3 bg-slate-50">
+            <div className="flex items-start justify-between mb-2">
+              <div className="font-medium">{driver.name}</div>
+              <span className={`px-2 py-0.5 rounded text-xs ${
+                driver.status === "Active" 
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                  : "bg-slate-100 text-slate-600 border border-slate-200"
+              }`}>
+                {driver.status}
+              </span>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
-                  placeholder="e.g., John Smith"
-                  value={newDriver.name}
-                  onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
-                />
+            <div className="text-xs space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded ${
+                  driver.type === "Van" 
+                    ? "bg-purple-100 text-purple-700" 
+                    : "bg-blue-100 text-blue-700"
+                }`}>
+                  {driver.type}
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                <select
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
-                  value={newDriver.type}
-                  onChange={(e) => setNewDriver({ ...newDriver, type: e.target.value })}
-                >
-                  <option value="Shuttle">Shuttle Driver</option>
-                  <option value="Van">Van Driver</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
-                  placeholder="(208) 555-0100"
-                  value={newDriver.phone}
-                  onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-5">
-              <button
-                onClick={() => setShowAddDriver(false)}
-                className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={addDriver}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700"
-              >
-                Add Driver
-              </button>
+              <div className="text-slate-600">{driver.phone}</div>
             </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+      
+      <button className="mt-4 w-full px-4 py-2 rounded-xl border border-blue-600 text-blue-600 text-sm font-medium hover:bg-blue-50">
+        + Add New Driver to Pool
+      </button>
     </div>
   );
 }
@@ -238,10 +148,12 @@ type RouteConfig = {
   status: "Active" | "Disabled";
   pricing: number;
   driverCapacity: number;
-  assignedDrivers: string[];
+  legA?: { assignedDrivers: string[] };  // For two-leg routes
+  legB?: { assignedDrivers: string[] };  // For two-leg routes
+  assignedDrivers?: string[];            // For single-leg routes
 };
 
-function RoutesPanel() {
+function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
   const [routes, setRoutes] = useState<RouteConfig[]>([
     { 
       id: "r1", 
@@ -251,7 +163,8 @@ function RoutesPanel() {
       status: "Active",
       pricing: 400,
       driverCapacity: 8,
-      assignedDrivers: ["Mike T.", "Sarah K.", "Tom R.", "Lisa M.", "James P."]
+      legA: { assignedDrivers: ["Mike T.", "Sarah K.", "Tom R."] },
+      legB: { assignedDrivers: ["Lisa M.", "James P.", "Carlos R."] }
     },
     { 
       id: "r2", 
@@ -261,7 +174,7 @@ function RoutesPanel() {
       status: "Active",
       pricing: 350,
       driverCapacity: 8,
-      assignedDrivers: ["Mike T.", "Sarah K.", "Tom R."]
+      assignedDrivers: ["Mike T.", "Sarah K.", "Emma W."]
     },
   ]);
 
@@ -324,10 +237,52 @@ function RoutesPanel() {
                 <span className="text-slate-600">Driver Capacity:</span>
                 <span className="font-semibold">{route.driverCapacity} drivers/day</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Assigned Drivers:</span>
-                <span className="font-semibold">{route.assignedDrivers.length} drivers</span>
-              </div>
+              
+              {/* Driver assignments by leg */}
+              {route.type === "Two-Leg" ? (
+                <>
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-slate-600 font-medium">Leg A Drivers:</span>
+                      <span className="font-semibold text-blue-600">{route.legA?.assignedDrivers.length || 0}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {route.legA?.assignedDrivers.map((driver, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                          {driver}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-slate-600 font-medium">Leg B Drivers:</span>
+                      <span className="font-semibold text-purple-600">{route.legB?.assignedDrivers.length || 0}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {route.legB?.assignedDrivers.map((driver, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800">
+                          {driver}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-slate-600 font-medium">Assigned Drivers:</span>
+                    <span className="font-semibold">{route.assignedDrivers?.length || 0}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {route.assignedDrivers?.map((driver, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-800">
+                        {driver}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -435,40 +390,181 @@ function RoutesPanel() {
                 </p>
               </div>
 
-              {/* Assigned Drivers */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Assigned Drivers ({editingRoute.assignedDrivers.length})
-                </label>
-                <div className="border rounded-xl p-3 bg-slate-50 max-h-32 overflow-y-auto">
-                  {editingRoute.assignedDrivers.length === 0 ? (
-                    <p className="text-sm text-slate-500">No drivers assigned yet</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {editingRoute.assignedDrivers.map((driver, idx) => (
-                        <span 
-                          key={idx}
-                          className="px-2 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs flex items-center gap-1"
-                        >
-                          {driver}
-                          <button
-                            onClick={() => {
-                              const updated = editingRoute.assignedDrivers.filter((_, i) => i !== idx);
-                              setEditingRoute({ ...editingRoute, assignedDrivers: updated });
-                            }}
-                            className="hover:text-blue-900"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+              {/* Assigned Drivers - Leg-specific for Two-Leg routes */}
+              {editingRoute.type === "Two-Leg" ? (
+                <>
+                  {/* Leg A Drivers */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Leg A Drivers ({editingRoute.legA?.assignedDrivers.length || 0})
+                    </label>
+                    <div className="border rounded-xl p-3 bg-blue-50/30 max-h-32 overflow-y-auto">
+                      {!editingRoute.legA?.assignedDrivers.length ? (
+                        <p className="text-sm text-slate-500">No drivers assigned to Leg A</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {editingRoute.legA.assignedDrivers.map((driver, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-2 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs flex items-center gap-1"
+                            >
+                              {driver}
+                              <button
+                                onClick={() => {
+                                  const updated = editingRoute.legA!.assignedDrivers.filter((_, i) => i !== idx);
+                                  setEditingRoute({ 
+                                    ...editingRoute, 
+                                    legA: { assignedDrivers: updated }
+                                  });
+                                }}
+                                className="hover:text-blue-900"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <select 
+                      className="mt-2 w-full text-sm rounded-lg border px-2 py-1"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const current = editingRoute.legA?.assignedDrivers || [];
+                          if (!current.includes(e.target.value)) {
+                            setEditingRoute({
+                              ...editingRoute,
+                              legA: { assignedDrivers: [...current, e.target.value] }
+                            });
+                          }
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="">+ Add Driver to Leg A</option>
+                      {driverPool.filter(d => d.status === "Active").map(driver => (
+                        <option key={driver.id} value={driver.name}>
+                          {driver.name} ({driver.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Leg B Drivers */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Leg B Drivers ({editingRoute.legB?.assignedDrivers.length || 0})
+                    </label>
+                    <div className="border rounded-xl p-3 bg-purple-50/30 max-h-32 overflow-y-auto">
+                      {!editingRoute.legB?.assignedDrivers.length ? (
+                        <p className="text-sm text-slate-500">No drivers assigned to Leg B</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {editingRoute.legB.assignedDrivers.map((driver, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-2 py-1 rounded-lg bg-purple-100 text-purple-800 text-xs flex items-center gap-1"
+                            >
+                              {driver}
+                              <button
+                                onClick={() => {
+                                  const updated = editingRoute.legB!.assignedDrivers.filter((_, i) => i !== idx);
+                                  setEditingRoute({ 
+                                    ...editingRoute, 
+                                    legB: { assignedDrivers: updated }
+                                  });
+                                }}
+                                className="hover:text-purple-900"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <select 
+                      className="mt-2 w-full text-sm rounded-lg border px-2 py-1"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const current = editingRoute.legB?.assignedDrivers || [];
+                          if (!current.includes(e.target.value)) {
+                            setEditingRoute({
+                              ...editingRoute,
+                              legB: { assignedDrivers: [...current, e.target.value] }
+                            });
+                          }
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="">+ Add Driver to Leg B</option>
+                      {driverPool.filter(d => d.status === "Active").map(driver => (
+                        <option key={driver.id} value={driver.name}>
+                          {driver.name} ({driver.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                /* Single-Leg Driver Assignment */
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Assigned Drivers ({editingRoute.assignedDrivers?.length || 0})
+                  </label>
+                  <div className="border rounded-xl p-3 bg-slate-50 max-h-32 overflow-y-auto">
+                    {!editingRoute.assignedDrivers?.length ? (
+                      <p className="text-sm text-slate-500">No drivers assigned yet</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {editingRoute.assignedDrivers.map((driver, idx) => (
+                          <span 
+                            key={idx}
+                            className="px-2 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs flex items-center gap-1"
+                          >
+                            {driver}
+                            <button
+                              onClick={() => {
+                                const updated = editingRoute.assignedDrivers!.filter((_, i) => i !== idx);
+                                setEditingRoute({ ...editingRoute, assignedDrivers: updated });
+                              }}
+                              className="hover:text-slate-900"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <select 
+                    className="mt-2 w-full text-sm rounded-lg border px-2 py-1"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const current = editingRoute.assignedDrivers || [];
+                        if (!current.includes(e.target.value)) {
+                          setEditingRoute({
+                            ...editingRoute,
+                            assignedDrivers: [...current, e.target.value]
+                          });
+                        }
+                        e.target.value = "";
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="">+ Add Driver to Route</option>
+                    {driverPool.filter(d => d.status === "Active").map(driver => (
+                      <option key={driver.id} value={driver.name}>
+                        {driver.name} ({driver.type})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <button className="mt-2 text-sm text-blue-600 hover:text-blue-700">
-                  + Add Driver to Route
-                </button>
-              </div>
+              )}
 
               {/* Pricing Info */}
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm">

@@ -668,17 +668,8 @@ function RouteDispatchPage() {
         </div>
       </div>
 
-      {/* Checks Panel */}
-      {issues.length > 0 && (
-        <div className="rounded-2xl border p-4 bg-amber-50 text-amber-900">
-          <div className="font-semibold mb-1">Checks</div>
-          <ul className="list-disc list-inside text-sm space-y-1">
-            {issues.map((i, idx) => (
-              <li key={idx} className={i.level === 'error' ? 'text-red-800' : ''}>{i.message}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Warnings & Scheduling Conflicts Panel */}
+      <WarningsPanel issues={issues} overbookedDays={overbookedDays} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
@@ -708,6 +699,102 @@ function RouteDispatchPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- Warnings Panel ---------------- */
+
+function WarningsPanel({ issues, overbookedDays }: { 
+  issues: Issue[]; 
+  overbookedDays: string[];
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Only show if there are issues or overbooked days
+  const hasWarnings = issues.length > 0 || overbookedDays.length > 0;
+  
+  if (!hasWarnings) {
+    return null;
+  }
+
+  const errorCount = issues.filter(i => i.level === 'error').length;
+  const warningCount = issues.filter(i => i.level === 'warn').length;
+  const overbookedCount = overbookedDays.length;
+
+  return (
+    <div className="rounded-2xl border bg-white overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
+      >
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-slate-900">⚠️ Warnings & Scheduling Conflicts</span>
+          <div className="flex items-center gap-2 text-xs">
+            {errorCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-medium">
+                {errorCount} {errorCount === 1 ? 'Error' : 'Errors'}
+              </span>
+            )}
+            {warningCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">
+                {warningCount} {warningCount === 1 ? 'Warning' : 'Warnings'}
+              </span>
+            )}
+            {overbookedCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-medium">
+                {overbookedCount} Overbooked {overbookedCount === 1 ? 'Day' : 'Days'}
+              </span>
+            )}
+          </div>
+        </div>
+        <span className="text-slate-400 text-lg">
+          {isExpanded ? '−' : '+'}
+        </span>
+      </button>
+      
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t space-y-3">
+          {/* Scheduling Conflicts */}
+          {issues.length > 0 && (
+            <div>
+              <div className="font-medium text-sm mb-2 text-slate-700">Scheduling Conflicts:</div>
+              <ul className="space-y-1.5">
+                {issues.map((issue, idx) => (
+                  <li 
+                    key={idx} 
+                    className={`text-sm flex items-start gap-2 ${
+                      issue.level === 'error' ? 'text-red-800' : 'text-amber-800'
+                    }`}
+                  >
+                    <span className="mt-0.5">
+                      {issue.level === 'error' ? '🔴' : '🟡'}
+                    </span>
+                    <span>{issue.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {/* Overbooked Days */}
+          {overbookedDays.length > 0 && (
+            <div>
+              <div className="font-medium text-sm mb-2 text-slate-700">Overbooked Days:</div>
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <ul className="space-y-1">
+                  {overbookedDays.map(day => (
+                    <li key={day} className="text-sm text-red-800 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                      {day}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

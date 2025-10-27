@@ -230,11 +230,63 @@ function DriversPanel() {
 
 /* ---------------- Routes Panel ---------------- */
 
+type RouteConfig = {
+  id: string;
+  name: string;
+  duration: string;
+  type: "Two-Leg" | "Single-Leg";
+  status: "Active" | "Disabled";
+  pricing: number;
+  driverCapacity: number;
+  assignedDrivers: string[];
+};
+
 function RoutesPanel() {
-  const [routes] = useState([
-    { id: "r1", name: "Main Salmon", duration: "6 days", type: "Two-Leg", status: "Active" },
-    { id: "r2", name: "Middle Fork", duration: "5 days", type: "Single-Leg", status: "Active" },
+  const [routes, setRoutes] = useState<RouteConfig[]>([
+    { 
+      id: "r1", 
+      name: "Main Salmon", 
+      duration: "6 days", 
+      type: "Two-Leg", 
+      status: "Active",
+      pricing: 400,
+      driverCapacity: 8,
+      assignedDrivers: ["Mike T.", "Sarah K.", "Tom R.", "Lisa M.", "James P."]
+    },
+    { 
+      id: "r2", 
+      name: "Middle Fork", 
+      duration: "5 days", 
+      type: "Single-Leg", 
+      status: "Active",
+      pricing: 350,
+      driverCapacity: 8,
+      assignedDrivers: ["Mike T.", "Sarah K.", "Tom R."]
+    },
   ]);
+
+  const [editingRoute, setEditingRoute] = useState<RouteConfig | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  function openEdit(route: RouteConfig) {
+    setEditingRoute({ ...route });
+    setShowEditModal(true);
+  }
+
+  function saveRoute() {
+    if (!editingRoute) return;
+    setRoutes(routes.map(r => r.id === editingRoute.id ? editingRoute : r));
+    setShowEditModal(false);
+    setEditingRoute(null);
+  }
+
+  function toggleStatus(id: string) {
+    setRoutes(routes.map(r => 
+      r.id === id 
+        ? { ...r, status: r.status === "Active" ? "Disabled" : "Active" }
+        : r
+    ));
+  }
 
   return (
     <div className="space-y-4">
@@ -253,17 +305,197 @@ function RoutesPanel() {
                 <h3 className="font-semibold text-lg">{route.name}</h3>
                 <p className="text-sm text-slate-600">{route.duration} • {route.type}</p>
               </div>
-              <span className="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                route.status === "Active" 
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-slate-50 text-slate-700 border border-slate-200"
+              }`}>
                 {route.status}
               </span>
             </div>
+            
+            {/* Route Details */}
+            <div className="space-y-2 mb-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Base Price:</span>
+                <span className="font-semibold">${route.pricing}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Driver Capacity:</span>
+                <span className="font-semibold">{route.driverCapacity} drivers/day</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Assigned Drivers:</span>
+                <span className="font-semibold">{route.assignedDrivers.length} drivers</span>
+              </div>
+            </div>
+
             <div className="flex gap-2">
-              <button className="flex-1 px-3 py-2 rounded-xl border text-sm hover:bg-slate-50">Edit</button>
-              <button className="px-3 py-2 rounded-xl border text-sm text-red-600 hover:bg-red-50">Disable</button>
+              <button 
+                onClick={() => openEdit(route)}
+                className="flex-1 px-3 py-2 rounded-xl border text-sm hover:bg-slate-50"
+              >
+                Edit
+              </button>
+              <button 
+                onClick={() => toggleStatus(route.id)}
+                className={`px-3 py-2 rounded-xl border text-sm ${
+                  route.status === "Active"
+                    ? "text-amber-600 hover:bg-amber-50"
+                    : "text-emerald-600 hover:bg-emerald-50"
+                }`}
+              >
+                {route.status === "Active" ? "Disable" : "Enable"}
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Route Modal */}
+      {showEditModal && editingRoute && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl border max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Route: {editingRoute.name}</h3>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                className="text-slate-500 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Route Name</label>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                    value={editingRoute.name}
+                    onChange={(e) => setEditingRoute({ ...editingRoute, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Trip Duration</label>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                    placeholder="e.g., 6 days"
+                    value={editingRoute.duration}
+                    onChange={(e) => setEditingRoute({ ...editingRoute, duration: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Pricing & Capacity */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Base Price (per vehicle)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600">$</span>
+                    <input
+                      type="number"
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 pl-7"
+                      value={editingRoute.pricing}
+                      onChange={(e) => setEditingRoute({ ...editingRoute, pricing: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Max Drivers per Day
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                    value={editingRoute.driverCapacity}
+                    onChange={(e) => setEditingRoute({ ...editingRoute, driverCapacity: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              {/* Route Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Route Type</label>
+                <select
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  value={editingRoute.type}
+                  onChange={(e) => setEditingRoute({ ...editingRoute, type: e.target.value as "Single-Leg" | "Two-Leg" })}
+                >
+                  <option value="Single-Leg">Single-Leg (one delivery)</option>
+                  <option value="Two-Leg">Two-Leg (Leg A → Leg B)</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  Single-Leg: Direct put-in to take-out. Two-Leg: Put-in to handoff, then handoff to take-out.
+                </p>
+              </div>
+
+              {/* Assigned Drivers */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Assigned Drivers ({editingRoute.assignedDrivers.length})
+                </label>
+                <div className="border rounded-xl p-3 bg-slate-50 max-h-32 overflow-y-auto">
+                  {editingRoute.assignedDrivers.length === 0 ? (
+                    <p className="text-sm text-slate-500">No drivers assigned yet</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {editingRoute.assignedDrivers.map((driver, idx) => (
+                        <span 
+                          key={idx}
+                          className="px-2 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs flex items-center gap-1"
+                        >
+                          {driver}
+                          <button
+                            onClick={() => {
+                              const updated = editingRoute.assignedDrivers.filter((_, i) => i !== idx);
+                              setEditingRoute({ ...editingRoute, assignedDrivers: updated });
+                            }}
+                            className="hover:text-blue-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button className="mt-2 text-sm text-blue-600 hover:text-blue-700">
+                  + Add Driver to Route
+                </button>
+              </div>
+
+              {/* Pricing Info */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm">
+                <div className="font-semibold text-blue-900 mb-1">💰 Pricing Information</div>
+                <p className="text-blue-800">
+                  This is the base shuttle cost per vehicle. Total trip cost = (base price × # of vehicles) + any additional fees.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveRoute}
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

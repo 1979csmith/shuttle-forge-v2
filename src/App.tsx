@@ -670,14 +670,29 @@ function RouteDispatchPage() {
 
       {/* Warnings & Scheduling Conflicts Panel */}
       <WarningsPanel issues={issues} overbookedDays={overbookedDays} onDateClick={(date) => {
-        // Scroll to the date section in List view
-        setMode('list');
-        setTimeout(() => {
-          const dateElement = document.querySelector(`[data-date="${date}"]`);
-          if (dateElement) {
-            dateElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
+        // Scroll to the date in current view mode
+        if (mode === 'list') {
+          // In List view: scroll to the date header
+          setTimeout(() => {
+            const dateElement = document.querySelector(`[data-date="${date}"]`);
+            if (dateElement) {
+              dateElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        } else {
+          // In Calendar view: scroll to the calendar day cell
+          setTimeout(() => {
+            const dayCell = document.querySelector(`[data-calendar-date="${date}"]`);
+            if (dayCell) {
+              dayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Flash the cell to draw attention
+              dayCell.classList.add('ring-4', 'ring-red-500', 'ring-offset-2');
+              setTimeout(() => {
+                dayCell.classList.remove('ring-4', 'ring-red-500', 'ring-offset-2');
+              }, 2000);
+            }
+          }, 100);
+        }
       }} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1318,7 +1333,11 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
           const isOverbooked = capacity.used > capacity.total;
           
           return (
-            <div key={dayISO} className={`bg-white p-2 min-h-[140px] ${isToday ? 'bg-blue-50' : ''}`}>
+            <div 
+              key={dayISO} 
+              data-calendar-date={dayISO}
+              className={`bg-white p-2 min-h-[140px] transition-all ${isToday ? 'bg-blue-50' : ''}`}
+            >
               <div className="flex items-center justify-between mb-1">
                 <div className={`text-xs font-medium ${isToday ? 'text-blue-600 font-bold' : 'text-slate-600'}`}>
                   {dayNum}

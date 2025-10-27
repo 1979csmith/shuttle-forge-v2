@@ -1041,6 +1041,9 @@ function RouteDispatchPage() {
           {mode === 'calendar' && (
             <JobDetailsPanel job={selectedJob} currentDate={currentDate} onClose={() => setSelectedJob(null)} />
           )}
+          {mode === 'list' && (
+            <CarsMovedTodayPanel jobs={jobs} currentDate={currentDate} />
+          )}
           <CapacityPanel capacityByDay={byDayCapacity} overbookedDays={overbookedDays} todayISO={currentDate} />
         </div>
       </div>
@@ -1872,6 +1875,71 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 /* ---------------- Sidebar ---------------- */
+
+function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
+  // Get all legs scheduled for today
+  const todayLegs = useMemo(() => {
+    const legs: { job: Job; legIndex: number; leg: Leg }[] = [];
+    jobs.forEach(job => {
+      job.legs.forEach((leg, legIndex) => {
+        if (leg.date === currentDate) {
+          legs.push({ job, legIndex, leg });
+        }
+      });
+    });
+    return legs;
+  }, [jobs, currentDate]);
+
+  const formattedDate = useMemo(() => {
+    const d = new Date(currentDate + "T00:00:00");
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }, [currentDate]);
+
+  return (
+    <div className="rounded-2xl border bg-white p-4">
+      <div className="font-semibold mb-3">Cars Moved Today ({formattedDate})</div>
+      {todayLegs.length === 0 ? (
+        <div className="text-sm text-slate-500 py-2">No cars scheduled for today</div>
+      ) : (
+        <div className="space-y-2">
+          {todayLegs.map(({ job, legIndex, leg }) => {
+            const legLabel = job.legs.length > 1 ? (leg.leg || `Leg ${legIndex + 1}`) : "Delivery";
+            const days = daysBetween(currentDate, job.tripTakeOut);
+            const urgency = urgencyClass(days);
+            
+            return (
+              <div key={`${job.id}-${legIndex}`} className="border rounded-xl p-3 bg-slate-50 text-sm">
+                <div className="flex items-start justify-between mb-1">
+                  <div className="font-medium">{job.car.owner}</div>
+                  {job.legs.length > 1 && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      leg.leg === 'A' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {legLabel}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-600 space-y-0.5">
+                  <div>{job.car.year} {job.car.makeModel} • {job.car.plate}</div>
+                  <div className="flex items-center gap-2">
+                    <span>{leg.startLocation} → {leg.endLocation}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${urgency}`}>
+                      {days === 0 ? 'Today' : days === 1 ? 'D-1' : `${days}d`}
+                    </span>
+                  </div>
+                  {leg.driverId && <div>Driver: {leg.driverId}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="mt-3 pt-3 border-t text-xs text-slate-600">
+        Total: <span className="font-semibold">{todayLegs.length} {todayLegs.length === 1 ? 'car' : 'cars'}</span>
+      </div>
+    </div>
+  );
+}
 
 function CapacityPanel({ capacityByDay, overbookedDays, todayISO }: { 
   capacityByDay: Map<string, DayCapacity>; 

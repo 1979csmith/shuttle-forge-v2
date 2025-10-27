@@ -169,7 +169,7 @@ function evaluate(_routeTodayISO: string, jobs: Job[], drivers: Driver[]) {
 
 /* ---------------- Demo Data ---------------- */
 
-const TODAY = "2025-10-26";
+const TODAY = "2025-10-27"; // Monday, October 27, 2025
 
 const DEMO_ROUTES: Route[] = [
   { id: "main_salmon", name: "Main Salmon" },

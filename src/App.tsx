@@ -359,9 +359,9 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
     currentDate: TODAY,
     drivers: DEMO_DRIVERS,
     jobs: [
-      // Oct 27 (Mon, TODAY) - 6 single-leg moves
+      // Oct 27 (Mon, TODAY) - 5 single-leg moves
       {
-        id: "MF-112",
+        id: "MF-101",
         car: { owner: "Morgan", makeModel: "Jeep Compass", plate: "WA-4L110I", year: 2019, color: "Gray" },
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
@@ -370,7 +370,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         ],
       },
       {
-        id: "MF-113",
+        id: "MF-102",
         car: { owner: "Nash", makeModel: "Ram ProMaster", plate: "ID-5M221J", year: 2021, color: "White" },
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
@@ -379,7 +379,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         ],
       },
       {
-        id: "MF-114",
+        id: "MF-103",
         car: { owner: "Owen", makeModel: "Toyota Land Cruiser", plate: "MT-6N332K", year: 2020, color: "Black" },
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
@@ -388,7 +388,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         ],
       },
       {
-        id: "MF-115",
+        id: "MF-104",
         car: { owner: "Price", makeModel: "Subaru Crosstrek", plate: "OR-7O443L", year: 2022, color: "Orange" },
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
@@ -397,7 +397,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         ],
       },
       {
-        id: "MF-116",
+        id: "MF-105",
         car: { owner: "Reed", makeModel: "Honda Ridgeline", plate: "WA-8P554M", year: 2021, color: "Silver" },
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
@@ -405,87 +405,551 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
       },
-      {
-        id: "MF-117",
-        car: { owner: "Scott", makeModel: "GMC Terrain", plate: "ID-9Q665N", year: 2020, color: "Blue" },
-        tripPutIn: "2025-10-22",
-        tripTakeOut: "2025-10-27",
-        legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:30", arrive: "13:45", driverId: "D3" },
-        ],
-      },
 
-      // Oct 29 - 8 single-leg moves
+      // Oct 28 (Tue) - 6 single-leg moves
       {
-        id: "MF-119",
-        car: { owner: "Upton", makeModel: "Volkswagen Atlas", plate: "OR-1S887P", year: 2021, color: "Red" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-106",
+        car: { owner: "Scott", makeModel: "GMC Terrain", plate: "ID-9Q665N", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
       },
       {
-        id: "MF-120",
-        car: { owner: "Vega", makeModel: "Buick Enclave", plate: "WA-2T998Q", year: 2020, color: "Gray" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-107",
+        car: { owner: "Turner", makeModel: "Mazda CX-9", plate: "MT-0R776O", year: 2019, color: "Green" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
       },
       {
-        id: "MF-121",
-        car: { owner: "Ward", makeModel: "Cadillac XT5", plate: "ID-3U009R", year: 2022, color: "Black" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-108",
+        car: { owner: "Upton", makeModel: "Volkswagen Atlas", plate: "OR-1S887P", year: 2021, color: "Red" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
       },
       {
-        id: "MF-122",
-        car: { owner: "York", makeModel: "Lincoln Navigator", plate: "MT-4V110S", year: 2021, color: "White" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-109",
+        car: { owner: "Vega", makeModel: "Buick Enclave", plate: "WA-2T998Q", year: 2020, color: "Gray" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
       },
       {
-        id: "MF-123",
-        car: { owner: "Zimmerman", makeModel: "Acura MDX", plate: "OR-5W221T", year: 2020, color: "Silver" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-110",
+        car: { owner: "Ward", makeModel: "Cadillac XT5", plate: "ID-3U009R", year: 2022, color: "Black" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
       },
       {
-        id: "MF-124",
-        car: { owner: "Allen", makeModel: "Infiniti QX80", plate: "WA-6X332U", year: 2019, color: "Blue" },
-        tripPutIn: "2025-10-24",
-        tripTakeOut: "2025-10-29",
+        id: "MF-111",
+        car: { owner: "Xavier", makeModel: "Audi Q7", plate: "MT-1X887Y", year: 2021, color: "White" },
+        tripPutIn: "2025-10-23",
+        tripTakeOut: "2025-10-28",
         legs: [
           { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
       },
+
+      // Oct 29 (Wed) - 7 single-leg moves
       {
-        id: "MF-125",
+        id: "MF-112",
+        car: { owner: "York", makeModel: "Lincoln Navigator", plate: "MT-4V110S", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-113",
+        car: { owner: "Zimmerman", makeModel: "Acura MDX", plate: "OR-5W221T", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-114",
+        car: { owner: "Allen", makeModel: "Infiniti QX80", plate: "WA-6X332U", year: 2019, color: "Black" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-115",
         car: { owner: "Brooks", makeModel: "Lexus GX", plate: "ID-7Y443V", year: 2021, color: "Green" },
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:45", arrive: "14:00", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
       },
       {
-        id: "MF-126",
+        id: "MF-116",
         car: { owner: "Cooper", makeModel: "Land Rover Discovery", plate: "MT-8Z554W", year: 2022, color: "Red" },
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "09:00", arrive: "14:15", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-117",
+        car: { owner: "Dixon", makeModel: "BMW X5", plate: "OR-9A112Z", year: 2020, color: "White" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-118",
+        car: { owner: "Ellis", makeModel: "Mercedes GLE", plate: "WA-0B223A", year: 2021, color: "Gray" },
+        tripPutIn: "2025-10-24",
+        tripTakeOut: "2025-10-29",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:45", arrive: "14:00", driverId: "D1" },
+        ],
+      },
+
+      // Oct 30 (Thu) - 8 single-leg moves
+      {
+        id: "MF-119",
+        car: { owner: "Foster", makeModel: "Porsche Cayenne", plate: "ID-1C334B", year: 2022, color: "Black" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-120",
+        car: { owner: "Garcia", makeModel: "Volvo XC90", plate: "MT-2D445C", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-121",
+        car: { owner: "Hayes", makeModel: "Tesla Model X", plate: "OR-3E556D", year: 2021, color: "White" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-122",
+        car: { owner: "Ingram", makeModel: "Rivian R1S", plate: "WA-4F667E", year: 2023, color: "Green" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-123",
+        car: { owner: "James", makeModel: "Jaguar F-PACE", plate: "ID-5G778F", year: 2020, color: "Silver" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-124",
+        car: { owner: "Kelly", makeModel: "Range Rover Sport", plate: "MT-6H889G", year: 2021, color: "Black" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-125",
+        car: { owner: "Lewis", makeModel: "Alfa Romeo Stelvio", plate: "OR-7I990H", year: 2022, color: "Red" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "08:45", arrive: "14:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-126",
+        car: { owner: "Martinez", makeModel: "Genesis GV80", plate: "WA-8J001I", year: 2021, color: "Gray" },
+        tripPutIn: "2025-10-25",
+        tripTakeOut: "2025-10-30",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-30", depart: "09:00", arrive: "14:15", driverId: "D2" },
+        ],
+      },
+
+      // Oct 31 (Fri) - 6 single-leg moves
+      {
+        id: "MF-127",
+        car: { owner: "Nelson", makeModel: "Maserati Levante", plate: "ID-9K112J", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-128",
+        car: { owner: "Parker", makeModel: "Bentley Bentayga", plate: "MT-0L223K", year: 2021, color: "White" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-129",
+        car: { owner: "Quinn", makeModel: "Aston Martin DBX", plate: "OR-1M334L", year: 2022, color: "Green" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-130",
+        car: { owner: "Roberts", makeModel: "Toyota 4Runner", plate: "WA-2N445M", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-131",
+        car: { owner: "Smith", makeModel: "Jeep Grand Cherokee", plate: "ID-3O556N", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-132",
+        car: { owner: "Taylor", makeModel: "Ford Expedition", plate: "MT-4P667O", year: 2020, color: "White" },
+        tripPutIn: "2025-10-26",
+        tripTakeOut: "2025-10-31",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-31", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+
+      // Nov 3 (Mon, Week 2) - 5 single-leg moves
+      {
+        id: "MF-133",
+        car: { owner: "Underwood", makeModel: "Chevrolet Tahoe", plate: "OR-5Q778P", year: 2021, color: "Gray" },
+        tripPutIn: "2025-10-29",
+        tripTakeOut: "2025-11-03",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-03", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-134",
+        car: { owner: "Valdez", makeModel: "GMC Yukon", plate: "WA-6R889Q", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-29",
+        tripTakeOut: "2025-11-03",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-03", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-135",
+        car: { owner: "Watson", makeModel: "Nissan Armada", plate: "ID-7S990R", year: 2021, color: "Black" },
+        tripPutIn: "2025-10-29",
+        tripTakeOut: "2025-11-03",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-03", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-136",
+        car: { owner: "Young", makeModel: "Toyota Sequoia", plate: "MT-8T001S", year: 2020, color: "White" },
+        tripPutIn: "2025-10-29",
+        tripTakeOut: "2025-11-03",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-03", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-137",
+        car: { owner: "Zhang", makeModel: "Honda Pilot", plate: "OR-9U112T", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-29",
+        tripTakeOut: "2025-11-03",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-03", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+
+      // Nov 5 (Wed) - 8 single-leg moves
+      {
+        id: "MF-138",
+        car: { owner: "Adams", makeModel: "Mazda CX-90", plate: "WA-0V223U", year: 2023, color: "Red" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-139",
+        car: { owner: "Blake", makeModel: "Hyundai Palisade", plate: "ID-1W334V", year: 2021, color: "Blue" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-140",
+        car: { owner: "Cole", makeModel: "Kia Telluride", plate: "MT-2X445W", year: 2022, color: "Green" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-141",
+        car: { owner: "Drake", makeModel: "Volkswagen ID.4", plate: "OR-3Y556X", year: 2021, color: "White" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-142",
+        car: { owner: "Evans", makeModel: "Ford Mustang Mach-E", plate: "WA-4Z667Y", year: 2023, color: "Gray" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-143",
+        car: { owner: "Flynn", makeModel: "Subaru Outback", plate: "ID-5A778Z", year: 2020, color: "Black" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-144",
+        car: { owner: "Grant", makeModel: "Subaru Ascent", plate: "MT-6B889A", year: 2021, color: "Silver" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "08:45", arrive: "14:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-145",
+        car: { owner: "Hayes", makeModel: "Toyota Highlander", plate: "OR-7C990B", year: 2020, color: "Blue" },
+        tripPutIn: "2025-10-31",
+        tripTakeOut: "2025-11-05",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-05", depart: "09:00", arrive: "14:15", driverId: "D2" },
+        ],
+      },
+
+      // Nov 7 (Fri) - 9 single-leg moves (OVERBOOKED!)
+      {
+        id: "MF-146",
+        car: { owner: "Irwin", makeModel: "Honda CR-V", plate: "WA-8D001C", year: 2021, color: "White" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-147",
+        car: { owner: "James", makeModel: "Toyota RAV4", plate: "ID-9E112D", year: 2020, color: "Gray" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-148",
+        car: { owner: "Kelly", makeModel: "Mazda CX-5", plate: "MT-0F223E", year: 2021, color: "Red" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-149",
+        car: { owner: "Lewis", makeModel: "Nissan Rogue", plate: "OR-1G334F", year: 2020, color: "Black" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-150",
+        car: { owner: "Morgan", makeModel: "Chevrolet Equinox", plate: "WA-2H445G", year: 2021, color: "Silver" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-151",
+        car: { owner: "Nash", makeModel: "GMC Terrain", plate: "ID-3I556H", year: 2020, color: "Blue" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-152",
+        car: { owner: "Owen", makeModel: "Ford Edge", plate: "MT-4J667I", year: 2021, color: "White" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "08:45", arrive: "14:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-153",
+        car: { owner: "Price", makeModel: "Jeep Wrangler", plate: "OR-5K778J", year: 2020, color: "Green" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "09:00", arrive: "14:15", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-154",
+        car: { owner: "Quinn", makeModel: "Jeep Gladiator", plate: "WA-6L889K", year: 2021, color: "Gray" },
+        tripPutIn: "2025-11-02",
+        tripTakeOut: "2025-11-07",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-07", depart: "09:15", arrive: "14:30", driverId: "D3" },
+        ],
+      },
+
+      // Nov 10 (Mon, Week 3) - 10 single-leg moves (OVERBOOKED!)
+      {
+        id: "MF-155",
+        car: { owner: "Roberts", makeModel: "Ram 1500", plate: "ID-7M990L", year: 2020, color: "Black" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "07:00", arrive: "12:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-156",
+        car: { owner: "Smith", makeModel: "Chevy Silverado", plate: "MT-8N001M", year: 2021, color: "Silver" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "07:15", arrive: "12:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-157",
+        car: { owner: "Taylor", makeModel: "Ford F-150", plate: "OR-9O112N", year: 2020, color: "White" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "07:30", arrive: "12:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-158",
+        car: { owner: "Underwood", makeModel: "Toyota Tundra", plate: "WA-0P223O", year: 2021, color: "Red" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "08:00", arrive: "13:15", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-159",
+        car: { owner: "Valdez", makeModel: "Nissan Titan", plate: "ID-1Q334P", year: 2020, color: "Blue" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "08:15", arrive: "13:30", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-160",
+        car: { owner: "Watson", makeModel: "GMC Sierra", plate: "MT-2R445Q", year: 2021, color: "Green" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "08:30", arrive: "13:45", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-161",
+        car: { owner: "Xavier", makeModel: "Honda Ridgeline", plate: "OR-3S556R", year: 2020, color: "Gray" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "08:45", arrive: "14:00", driverId: "D1" },
+        ],
+      },
+      {
+        id: "MF-162",
+        car: { owner: "Young", makeModel: "Jeep Gladiator", plate: "WA-4T667S", year: 2021, color: "Black" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "09:00", arrive: "14:15", driverId: "D2" },
+        ],
+      },
+      {
+        id: "MF-163",
+        car: { owner: "Zhang", makeModel: "Ford Ranger", plate: "ID-5U778T", year: 2020, color: "Silver" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "09:15", arrive: "14:30", driverId: "D3" },
+        ],
+      },
+      {
+        id: "MF-164",
+        car: { owner: "Adams", makeModel: "Toyota Tacoma", plate: "MT-6V889U", year: 2021, color: "White" },
+        tripPutIn: "2025-11-05",
+        tripTakeOut: "2025-11-10",
+        legs: [
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-11-10", depart: "09:30", arrive: "14:45", driverId: "D1" },
         ],
       },
     ],

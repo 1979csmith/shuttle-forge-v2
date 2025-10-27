@@ -861,7 +861,7 @@ export default function RouteDispatchPage() {
   const hasErrors = issues.some(i => i.level === "error");
   const exportBlocked = hasErrors;
 
-  const [mode, setMode] = useState<"list" | "timeline" | "calendar">("list");
+  const [mode, setMode] = useState<"list" | "calendar">("list");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [draggedItem, setDraggedItem] = useState<{ job: Job; legIndex: number } | null>(null);
   const [dropWarning, setDropWarning] = useState<string | null>(null);
@@ -958,7 +958,6 @@ export default function RouteDispatchPage() {
         <div className="flex items-center gap-2">
           <button onClick={() => setMode("list")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>List</button>
           <button onClick={() => setMode("calendar")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'calendar' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>Calendar</button>
-          <button onClick={() => setMode("timeline")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'timeline' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>Timeline</button>
           <button disabled={exportBlocked} className={`px-3 py-2 rounded-xl border text-sm ${exportBlocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}>Export</button>
         </div>
       </div>
@@ -989,10 +988,8 @@ export default function RouteDispatchPage() {
               onDragEnd={() => setDraggedItem(null)}
               onDropWarning={setDropWarning}
               onUpdateJobLegDate={updateJobLegDate}
-              onUpdateJobLegLocation={updateJobLegLocation}
             />
           )}
-          {mode === 'timeline' && <TimelineMode jobs={jobs} currentDate={currentDate} />}
         </div>
 
         {/* Sidebar */}
@@ -1427,7 +1424,7 @@ function handleDrop(
 }
 
 /** Calendar grid (7 columns x N weeks). Cards render on their leg date(s) */
-function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate, onUpdateJobLegLocation }: {
+function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate }: {
   jobs: Job[];
   currentDate: string;
   onSelectJob: (job: Job) => void;
@@ -1436,7 +1433,6 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
   onDragEnd: () => void;
   onDropWarning: (warning: string | null) => void;
   onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void;
-  onUpdateJobLegLocation: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
 }) {
   // Show a 3-week window centered around current week for dispatching
   const weekStart = startOfWeek(currentDate);            // Sunday
@@ -1521,7 +1517,6 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
                     onDragStart={() => onDragStart({ job, legIndex })}
                     onDragEnd={onDragEnd}
                     isDragging={draggedItem?.job.id === job.id && draggedItem?.legIndex === legIndex}
-                    onUpdateLocation={onUpdateJobLegLocation}
                   />
                 ))}
                 
@@ -1828,75 +1823,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center text-xs text-slate-800">
       <div className="w-16 text-slate-500">{label}:</div>
       <div className="flex-1 font-medium">{value}</div>
-    </div>
-  );
-}
-
-/* ---------------- Timeline View ---------------- */
-
-function TimelineMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
-  const startISO = useMemo(() => {
-    const min = jobs.reduce((acc, j) => Math.min(acc, new Date(j.legs[0].date + "T00:00:00").getTime()), Number.POSITIVE_INFINITY);
-    return iso(new Date(min - 86400000));
-  }, [jobs]);
-  
-  const endISO = useMemo(() => {
-    const max = jobs.reduce((acc, j) => {
-      const lastLegDate = j.legs[j.legs.length - 1].date;
-      return Math.max(acc, new Date(lastLegDate + "T00:00:00").getTime());
-    }, 0);
-    return iso(new Date(max + 86400000));
-  }, [jobs]);
-
-  const totalDays = Math.max(1, daysBetween(startISO, endISO));
-  function clamp(n: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, n)); }
-  function xFor(dateISO: string) { return clamp(daysBetween(startISO, dateISO), 0, totalDays); }
-  function barStyle(x: number) { return { left: `calc(${x} * 100% / ${totalDays + 1})`, width: `calc(100% / ${totalDays + 1})` }; }
-
-  return (
-    <div className="rounded-2xl border bg-white p-4">
-      <div className="font-semibold mb-2">Schedule (Timeline)</div>
-      <div className="relative border-t">
-        <div className="sticky top-0 bg-white/80 backdrop-blur z-10">
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${totalDays + 1}, minmax(64px,1fr))` }}>
-            {Array.from({ length: totalDays + 1 }).map((_, i) => (
-              <div key={i} className="text-xs text-slate-600 px-2 py-1 border-r">{addDaysISO(startISO, i)}</div>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2 mt-2">
-          {jobs.map(job => {
-            const first = job.legs[0];
-            const second = job.legs[1];
-            const aX = xFor(first.date);
-            const clsA = urgencyClass(daysBetween(currentDate, first.date));
-            const bX = second ? xFor(second.date) : null;
-            const clsB = second ? urgencyClass(daysBetween(currentDate, second.date)) : null;
-
-            return (
-              <div key={job.id} className="border rounded p-2">
-                <div className="text-sm font-semibold mb-1">
-                  {jobNumber(job)} <span className="text-slate-600 font-normal">— {job.car.makeModel} ({job.car.plate})</span>
-                </div>
-                <div className="relative grid" style={{ gridTemplateColumns: `repeat(${totalDays + 1}, minmax(64px,1fr))` }}>
-                  <div
-                    className={`absolute top-1 h-6 rounded border ${clsA}`}
-                    style={barStyle(aX)}
-                    title={(job.legs.length > 1 ? "Leg " + (first.leg || "?") + ": " : "") + first.startLocation + " to " + first.endLocation + " on " + first.date}
-                  ></div>
-                  {second && bX !== null && (
-                    <div
-                      className={`absolute top-9 h-6 rounded border ${clsB}`}
-                      style={barStyle(bX)}
-                      title={"Leg " + (second.leg || "?") + ": " + second.startLocation + " to " + second.endLocation + " on " + second.date}
-                    ></div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

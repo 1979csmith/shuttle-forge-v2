@@ -917,6 +917,31 @@ export default function RouteDispatchPage() {
             <span className="px-2 py-1 rounded border bg-slate-50">Cars to move: {carsToMove}</span>
             <span className="px-2 py-1 rounded border bg-slate-50">Overbooked days: {overbookedDays.length}</span>
           </div>
+          
+          {/* Color Guide */}
+          {activeRoute === 'main_salmon' && (
+            <div className="mt-3 flex items-center gap-4 text-xs border-t pt-3">
+              <div className="font-semibold text-slate-700">Legend:</div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400"></div>
+                <span className="text-slate-600">Leg A (Launch → Stanley)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-400"></div>
+                <span className="text-slate-600">Leg B (Stanley → Take-out)</span>
+              </div>
+            </div>
+          )}
+          
+          {activeRoute === 'middle_fork' && (
+            <div className="mt-3 flex items-center gap-4 text-xs border-t pt-3">
+              <div className="font-semibold text-slate-700">Legend:</div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-slate-100 border-2 border-slate-400"></div>
+                <span className="text-slate-600">Single Delivery</span>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setMode("list")} className={`px-3 py-2 rounded-xl border text-sm ${mode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>List</button>
@@ -1218,6 +1243,7 @@ function daysArray(startISO: string, count: number): string[] {
 function handleDrop(
   targetDate: string,
   draggedItem: { job: Job; legIndex: number },
+  targetSlotType: string,
   onDropWarning: (warning: string | null) => void,
   onDragEnd: () => void,
   onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void
@@ -1226,6 +1252,18 @@ function handleDrop(
   const leg = job.legs[legIndex];
   const isLegB = leg.leg === "B";
   const isLegA = leg.leg === "A";
+  
+  // Rule 0: Leg-specific drop zones (Main Salmon only)
+  if (isLegA && targetSlotType === "B") {
+    onDropWarning(`❌ Cannot drop Leg A (blue) into a Leg B (purple) slot. Drag to a blue slot instead.`);
+    onDragEnd();
+    return;
+  }
+  if (isLegB && targetSlotType === "A") {
+    onDropWarning(`❌ Cannot drop Leg B (purple) into a Leg A (blue) slot. Drag to a purple slot instead.`);
+    onDragEnd();
+    return;
+  }
   
   // Rule 1: Leg B must be at take-out by D-1
   if (isLegB) {
@@ -1377,7 +1415,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
                           e.preventDefault();
                           e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
                           if (draggedItem) {
-                            handleDrop(dayISO, draggedItem, onDropWarning, onDragEnd, onUpdateJobLegDate);
+                            handleDrop(dayISO, draggedItem, slotType, onDropWarning, onDragEnd, onUpdateJobLegDate);
                           }
                         }}
                       >
@@ -1440,6 +1478,11 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
     legColorCls = legColorCls.replace(/border-\w+-\d+/, "border-amber-500 border-2");
   }
 
+  // Left border stripe color
+  const leftBorderColor = isLegA ? 'border-l-blue-500' : 
+                          isLegB ? 'border-l-purple-500' : 
+                          'border-l-slate-500';
+
   return (
     <button
       onClick={onClick}
@@ -1451,7 +1494,7 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
         }
       }}
       onDragEnd={onDragEnd}
-      className={`w-full text-left rounded-lg border ${legColorCls} px-2 py-1.5 hover:shadow transition text-xs cursor-move ${
+      className={`w-full text-left rounded-lg border ${legColorCls} border-l-4 ${leftBorderColor} px-2 py-1.5 hover:shadow transition text-xs cursor-move ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
     >

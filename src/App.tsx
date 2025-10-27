@@ -180,6 +180,11 @@ const DEMO_DRIVERS: Driver[] = [
   { id: "D1", name: "Mike W", role: "shuttle", onDuty: true },
   { id: "D2", name: "Sasha R", role: "shuttle", onDuty: true },
   { id: "D3", name: "Troy H", role: "shuttle", onDuty: true },
+  { id: "D4", name: "Jake P", role: "shuttle", onDuty: true },
+  { id: "D5", name: "Emma L", role: "shuttle", onDuty: true },
+  { id: "D6", name: "Chris M", role: "shuttle", onDuty: true },
+  { id: "D7", name: "Alex K", role: "shuttle", onDuty: true },
+  { id: "D8", name: "Jordan T", role: "shuttle", onDuty: true },
   { id: "V1", name: "Van Crew", role: "van", onDuty: true },
 ];
 
@@ -1027,7 +1032,6 @@ function RouteDispatchPage() {
     [byDayCapacity]
   );
 
-  const carsToMove = jobs.length;
   const hasErrors = issues.some(i => i.level === "error");
   const exportBlocked = hasErrors;
 
@@ -1096,7 +1100,6 @@ function RouteDispatchPage() {
         <div>
           <div className="text-xl font-bold">{route?.name} — Dispatch</div>
           <div className="mt-2 flex flex-wrap gap-2 text-sm">
-            <span className="px-2 py-1 rounded border bg-slate-50">Cars to move: {carsToMove}</span>
             <span className="px-2 py-1 rounded border bg-slate-50">Overbooked days: {overbookedDays.length}</span>
           </div>
           

@@ -12,7 +12,7 @@ import { useState } from "react";
  */
 
 export default function Office() {
-  const [activeTab, setActiveTab] = useState<"routes" | "locations" | "settings">("routes");
+  const [activeTab, setActiveTab] = useState<"routes" | "settings">("routes");
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
@@ -38,16 +38,6 @@ export default function Office() {
             Routes & Drivers
           </button>
           <button
-            onClick={() => setActiveTab("locations")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeTab === "locations"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Locations
-          </button>
-          <button
             onClick={() => setActiveTab("settings")}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
               activeTab === "settings"
@@ -62,7 +52,6 @@ export default function Office() {
         {/* Content */}
         <div className="space-y-6">
           {activeTab === "routes" && <RoutesAndDriversPanel />}
-          {activeTab === "locations" && <LocationsPanel />}
           {activeTab === "settings" && <SettingsPanel />}
         </div>
       </div>
@@ -732,72 +721,6 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ---------------- Locations Panel ---------------- */
-
-function LocationsPanel() {
-  const [locations] = useState({
-    putIns: ["Corn Creek", "Indian Creek", "Boundary Creek"],
-    takeOuts: ["Hammer Creek", "Carey Creek", "Vinegar Creek"],
-    handoffs: ["Stanley Shuttle Yard", "Challis Hub"],
-  });
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Location Management</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Put-Ins */}
-        <div className="rounded-2xl border bg-white p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Put-In Locations</h3>
-            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
-          </div>
-          <ul className="space-y-2">
-            {locations.putIns.map((loc, i) => (
-              <li key={i} className="flex items-center justify-between text-sm">
-                <span>{loc}</span>
-                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Take-Outs */}
-        <div className="rounded-2xl border bg-white p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Take-Out Locations</h3>
-            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
-          </div>
-          <ul className="space-y-2">
-            {locations.takeOuts.map((loc, i) => (
-              <li key={i} className="flex items-center justify-between text-sm">
-                <span>{loc}</span>
-                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Handoffs */}
-        <div className="rounded-2xl border bg-white p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Handoff Points</h3>
-            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
-          </div>
-          <ul className="space-y-2">
-            {locations.handoffs.map((loc, i) => (
-              <li key={i} className="flex items-center justify-between text-sm">
-                <span>{loc}</span>
-                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }

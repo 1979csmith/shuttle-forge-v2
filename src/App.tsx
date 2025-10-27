@@ -669,7 +669,16 @@ function RouteDispatchPage() {
       </div>
 
       {/* Warnings & Scheduling Conflicts Panel */}
-      <WarningsPanel issues={issues} overbookedDays={overbookedDays} />
+      <WarningsPanel issues={issues} overbookedDays={overbookedDays} onDateClick={(date) => {
+        // Scroll to the date section in List view
+        setMode('list');
+        setTimeout(() => {
+          const dateElement = document.querySelector(`[data-date="${date}"]`);
+          if (dateElement) {
+            dateElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
@@ -705,9 +714,10 @@ function RouteDispatchPage() {
 
 /* ---------------- Warnings Panel ---------------- */
 
-function WarningsPanel({ issues, overbookedDays }: { 
+function WarningsPanel({ issues, overbookedDays, onDateClick }: { 
   issues: Issue[]; 
   overbookedDays: string[];
+  onDateClick?: (date: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -784,9 +794,19 @@ function WarningsPanel({ issues, overbookedDays }: {
               <div className="rounded-lg border border-red-200 bg-red-50 p-3">
                 <ul className="space-y-1">
                   {overbookedDays.map(day => (
-                    <li key={day} className="text-sm text-red-800 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-red-600"></span>
-                      {day}
+                    <li key={day}>
+                      <button
+                        onClick={() => {
+                          if (onDateClick) {
+                            onDateClick(day);
+                          }
+                        }}
+                        className="w-full text-left text-sm text-red-800 flex items-center gap-2 hover:bg-red-100 px-2 py-1 rounded transition"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                        <span className="flex-1">{day}</span>
+                        <span className="text-xs text-red-600">→</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -910,11 +930,14 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
         return (
           <div key={date} className="space-y-3">
             {/* Date Header */}
-            <div className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
-              isToday 
-                ? 'bg-blue-100 border-blue-400 text-blue-900' 
-                : 'bg-slate-100 border-slate-300 text-slate-800'
-            }`}>
+            <div 
+              data-date={date}
+              className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
+                isToday 
+                  ? 'bg-blue-100 border-blue-400 text-blue-900' 
+                  : 'bg-slate-100 border-slate-300 text-slate-800'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-bold text-lg">{dayName}</div>

@@ -825,20 +825,6 @@ function SettingsPanel() {
       {/* Other Settings */}
       <div className="rounded-2xl border bg-white p-4 space-y-4">
         <div>
-          <h3 className="font-semibold mb-2">Capacity Settings</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Max Shuttle Drivers/Day</label>
-              <input type="number" defaultValue={8} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Min Van Drivers/Day</label>
-              <input type="number" defaultValue={1} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
-            </div>
-          </div>
-        </div>
-
-        <div>
           <h3 className="font-semibold mb-2">Scheduling Rules</h3>
           <div className="space-y-2">
             <label className="flex items-center gap-2">

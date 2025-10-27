@@ -1190,6 +1190,24 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
     return map;
   }, [jobs, allDays]);
 
+  // Calculate capacity per day
+  const capacityByDay = useMemo(() => {
+    const map = new Map<string, { used: number; total: number }>();
+    const TOTAL_DRIVERS = 8; // Max shuttle driver capacity
+    
+    for (const day of allDays) {
+      // Count legs scheduled for this day
+      let used = 0;
+      for (const job of jobs) {
+        for (const leg of job.legs) {
+          if (leg.date === day) used++;
+        }
+      }
+      map.set(day, { used, total: TOTAL_DRIVERS });
+    }
+    return map;
+  }, [allDays, jobs]);
+
   return (
     <div className="rounded-2xl border bg-white">
       {/* Day headers */}
@@ -1204,6 +1222,9 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
         {allDays.map((dayISO) => {
           const isToday = dayISO === currentDate;
           const dayNum = new Date(dayISO + "T00:00:00").getDate();
+          const capacity = capacityByDay.get(dayISO) || { used: 0, total: 8 };
+          const available = capacity.total - capacity.used;
+          const isOverbooked = capacity.used > capacity.total;
           
           return (
             <div key={dayISO} className={`bg-white p-2 min-h-[140px] ${isToday ? 'bg-blue-50' : ''}`}>
@@ -1212,10 +1233,17 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
                   {dayNum}
                   {isToday && <span className="ml-1 text-[10px]">Today</span>}
                 </div>
+                <div className={`text-[10px] font-semibold ${
+                  isOverbooked ? 'text-red-600' : 
+                  available === 0 ? 'text-amber-600' : 
+                  'text-slate-500'
+                }`}>
+                  {capacity.used}/{capacity.total}
+                </div>
               </div>
 
               {/* Vehicle cards for this day */}
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {(byDay.get(dayISO) || []).map(job => (
                   <VehicleCard
                     key={job.id}
@@ -1224,6 +1252,19 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
                     onClick={() => onSelectJob(job)}
                   />
                 ))}
+                
+                {/* Empty slots for available drivers */}
+                {available > 0 && Array.from({ length: Math.min(available, 3) }).map((_, idx) => (
+                  <div 
+                    key={`empty-${idx}`} 
+                    className="w-full h-6 rounded border border-dashed border-slate-300 bg-slate-50/50"
+                  />
+                ))}
+                {available > 3 && (
+                  <div className="text-[9px] text-center text-slate-400">
+                    +{available - 3} more
+                  </div>
+                )}
               </div>
             </div>
           );

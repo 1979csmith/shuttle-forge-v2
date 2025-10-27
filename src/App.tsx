@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 /**
  * ShuttleForge — Route Dispatch (supports single- and two-leg jobs)
@@ -835,10 +835,15 @@ export default function RouteDispatchPage() {
   const [activeRoute, setActiveRoute] = useState("main_salmon");
   const route = DEMO_ROUTES.find(r => r.id === activeRoute);
 
-  // Get data for active route (updates when route changes)
-  const jobs = DEMO_DATA[activeRoute].jobs;
+  // Get data for active route - jobs are mutable state
+  const [jobs, setJobs] = useState<Job[]>(DEMO_DATA[activeRoute].jobs);
   const drivers = DEMO_DATA[activeRoute].drivers;
   const currentDate = DEMO_DATA[activeRoute].currentDate;
+  
+  // Update jobs when route changes
+  useEffect(() => {
+    setJobs(DEMO_DATA[activeRoute].jobs);
+  }, [activeRoute]);
 
   const { issues, byDayCapacity } = useMemo(
     () => evaluate(currentDate, jobs, drivers),
@@ -860,6 +865,18 @@ export default function RouteDispatchPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [draggedItem, setDraggedItem] = useState<{ job: Job; legIndex: number } | null>(null);
   const [dropWarning, setDropWarning] = useState<string | null>(null);
+  
+  // Function to update a job's leg date
+  const updateJobLegDate = (jobId: string, legIndex: number, newDate: string) => {
+    setJobs(prevJobs => prevJobs.map(job => {
+      if (job.id === jobId) {
+        const updatedLegs = [...job.legs];
+        updatedLegs[legIndex] = { ...updatedLegs[legIndex], date: newDate };
+        return { ...job, legs: updatedLegs };
+      }
+      return job;
+    }));
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto font-sans space-y-6">
@@ -934,6 +951,7 @@ export default function RouteDispatchPage() {
               onDragStart={setDraggedItem}
               onDragEnd={() => setDraggedItem(null)}
               onDropWarning={setDropWarning}
+              onUpdateJobLegDate={updateJobLegDate}
             />
           )}
           {mode === 'timeline' && <TimelineMode jobs={jobs} currentDate={currentDate} />}
@@ -1201,7 +1219,8 @@ function handleDrop(
   targetDate: string,
   draggedItem: { job: Job; legIndex: number },
   onDropWarning: (warning: string | null) => void,
-  onDragEnd: () => void
+  onDragEnd: () => void,
+  onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void
 ) {
   const { job, legIndex } = draggedItem;
   const leg = job.legs[legIndex];
@@ -1228,13 +1247,13 @@ function handleDrop(
     }
   }
   
-  // TODO: Actually update the job date here
-  console.log(`Move ${job.id} Leg ${leg.leg || "single"} to ${targetDate}`);
+  // Update the job's leg date
+  onUpdateJobLegDate(job.id, legIndex, targetDate);
   onDragEnd();
 }
 
 /** Calendar grid (7 columns x N weeks). Cards render on their leg date(s) */
-function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning }: {
+function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate }: {
   jobs: Job[];
   currentDate: string;
   onSelectJob: (job: Job) => void;
@@ -1242,6 +1261,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
   onDragStart: (item: { job: Job; legIndex: number }) => void;
   onDragEnd: () => void;
   onDropWarning: (warning: string | null) => void;
+  onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void;
 }) {
   // Show a 3-week window centered around current week for dispatching
   const weekStart = startOfWeek(currentDate);            // Sunday
@@ -1357,7 +1377,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
                           e.preventDefault();
                           e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
                           if (draggedItem) {
-                            handleDrop(dayISO, draggedItem, onDropWarning, onDragEnd);
+                            handleDrop(dayISO, draggedItem, onDropWarning, onDragEnd, onUpdateJobLegDate);
                           }
                         }}
                       >

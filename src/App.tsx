@@ -683,7 +683,7 @@ function RouteDispatchPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
-          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} onUpdateLocation={updateJobLegLocation} />}
+          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} overbookedDays={overbookedDays} onUpdateLocation={updateJobLegLocation} />}
           {mode === 'calendar' && (
             <CalendarView
               jobs={jobs}
@@ -821,9 +821,10 @@ function WarningsPanel({ issues, overbookedDays, onDateClick }: {
 
 /* ---------------- List View ---------------- */
 
-function ListMode({ jobs, currentDate, onUpdateLocation }: { 
+function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: { 
   jobs: Job[]; 
   currentDate: string;
+  overbookedDays: string[];
   onUpdateLocation: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
 }) {
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
@@ -923,6 +924,7 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
       {/* Jobs grouped by date */}
       {jobsByDate.map(({ date, jobs: dateJobs }) => {
         const isToday = date === currentDate;
+        const isOverbooked = overbookedDays.includes(date);
         const dateObj = new Date(date + 'T00:00:00');
         const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -933,19 +935,25 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
             <div 
               data-date={date}
               className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
-                isToday 
+                isOverbooked
+                  ? 'bg-red-600 border-red-800 text-white shadow-lg'
+                  : isToday 
                   ? 'bg-blue-100 border-blue-400 text-blue-900' 
                   : 'bg-slate-100 border-slate-300 text-slate-800'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-lg">{dayName}</div>
+                  <div className="font-bold text-lg flex items-center gap-2">
+                    {isOverbooked && <span className="text-xl">⚠️</span>}
+                    {dayName}
+                  </div>
                   <div className="text-sm">{dateStr}</div>
                 </div>
-                <div className="text-sm font-semibold">
+                <div className="text-sm font-semibold flex items-center gap-2">
                   {dateJobs.length} {dateJobs.length === 1 ? 'job' : 'jobs'}
                   {isToday && <span className="ml-2 px-2 py-1 rounded-full bg-blue-600 text-white text-xs">TODAY</span>}
+                  {isOverbooked && <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">OVERBOOKED</span>}
                 </div>
               </div>
             </div>

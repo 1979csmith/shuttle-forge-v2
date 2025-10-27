@@ -1877,6 +1877,9 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 /* ---------------- Sidebar ---------------- */
 
 function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
+  // Track confirmed deliveries in local state (in production, this would be saved to backend)
+  const [confirmedDeliveries, setConfirmedDeliveries] = useState<Set<string>>(new Set());
+
   // Get all legs scheduled for today
   const todayLegs = useMemo(() => {
     const legs: { job: Job; legIndex: number; leg: Leg }[] = [];
@@ -1890,6 +1893,22 @@ function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: 
     return legs;
   }, [jobs, currentDate]);
 
+  function handleConfirm(jobId: string, legIndex: number) {
+    const key = `${jobId}-${legIndex}`;
+    setConfirmedDeliveries(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  const confirmedCount = confirmedDeliveries.size;
+  const totalCount = todayLegs.length;
+
   const formattedDate = useMemo(() => {
     const d = new Date(currentDate + "T00:00:00");
     return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -1897,20 +1916,34 @@ function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: 
 
   return (
     <div className="rounded-2xl border bg-white p-4">
-      <div className="font-semibold mb-3">Cars Moved Today ({formattedDate})</div>
+      <div className="font-semibold mb-3">Cars on the Move — {formattedDate}</div>
       {todayLegs.length === 0 ? (
-        <div className="text-sm text-slate-500 py-2">No cars scheduled for today</div>
+        <div className="text-sm text-slate-500 py-2">No cars on the move today</div>
       ) : (
         <div className="space-y-2">
           {todayLegs.map(({ job, legIndex, leg }) => {
             const legLabel = job.legs.length > 1 ? (leg.leg || `Leg ${legIndex + 1}`) : "Delivery";
             const days = daysBetween(currentDate, job.tripTakeOut);
             const urgency = urgencyClass(days);
+            const key = `${job.id}-${legIndex}`;
+            const isConfirmed = confirmedDeliveries.has(key);
             
             return (
-              <div key={`${job.id}-${legIndex}`} className="border rounded-xl p-3 bg-slate-50 text-sm">
+              <div 
+                key={key} 
+                className={`border rounded-xl p-3 text-sm transition-colors ${
+                  isConfirmed 
+                    ? 'bg-emerald-50 border-emerald-200' 
+                    : 'bg-slate-50 border-slate-200'
+                }`}
+              >
                 <div className="flex items-start justify-between mb-1">
-                  <div className="font-medium">{job.car.owner}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium">{job.car.owner}</div>
+                    {isConfirmed && (
+                      <span className="text-emerald-600 text-xs">✓</span>
+                    )}
+                  </div>
                   {job.legs.length > 1 && (
                     <span className={`text-xs px-2 py-0.5 rounded ${
                       leg.leg === 'A' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
@@ -1919,7 +1952,7 @@ function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: 
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-slate-600 space-y-0.5">
+                <div className="text-xs text-slate-600 space-y-0.5 mb-2">
                   <div>{job.car.year} {job.car.makeModel} • {job.car.plate}</div>
                   <div className="flex items-center gap-2">
                     <span>{leg.startLocation} → {leg.endLocation}</span>
@@ -1929,13 +1962,30 @@ function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: 
                   </div>
                   {leg.driverId && <div>Driver: {leg.driverId}</div>}
                 </div>
+                <button
+                  onClick={() => handleConfirm(job.id, legIndex)}
+                  className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    isConfirmed
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isConfirmed ? '✓ Confirmed at Take-Out' : 'Confirm Delivery'}
+                </button>
               </div>
             );
           })}
         </div>
       )}
-      <div className="mt-3 pt-3 border-t text-xs text-slate-600">
-        Total: <span className="font-semibold">{todayLegs.length} {todayLegs.length === 1 ? 'car' : 'cars'}</span>
+      <div className="mt-3 pt-3 border-t text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-600">
+            Total: <span className="font-semibold">{totalCount} {totalCount === 1 ? 'car' : 'cars'}</span>
+          </span>
+          <span className={`font-semibold ${confirmedCount === totalCount && totalCount > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+            {confirmedCount}/{totalCount} Confirmed
+          </span>
+        </div>
       </div>
     </div>
   );

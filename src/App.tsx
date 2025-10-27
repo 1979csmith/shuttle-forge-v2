@@ -1178,9 +1178,24 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
                 )}
               </div>
 
-              {/* Expand Icon */}
-              <div className="shrink-0 text-slate-400">
-                {isExpanded ? '▼' : '▶'}
+              {/* Edit & Expand Icons */}
+              <div className="shrink-0 flex items-center gap-2">
+                {!isExpanded && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpand(job.id);
+                      setEditingJob(job.id);
+                      setEditingLeg(0);
+                    }}
+                    className="px-2 py-1 text-xs rounded border border-slate-300 hover:bg-slate-50"
+                  >
+                    ✏️ Edit
+                  </button>
+                )}
+                <div className="text-slate-400">
+                  {isExpanded ? '▼' : '▶'}
+                </div>
               </div>
             </div>
 

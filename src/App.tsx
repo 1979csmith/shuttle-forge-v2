@@ -648,6 +648,10 @@ function RouteDispatchPage() {
                 <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-400"></div>
                 <span className="text-slate-600">Leg B (Stanley → Take-out)</span>
               </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-red-600 border-2 border-red-800"></div>
+                <span className="text-slate-600 font-semibold">⚠️ Overbooked Day</span>
+              </div>
             </div>
           )}
           
@@ -657,6 +661,10 @@ function RouteDispatchPage() {
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded bg-slate-100 border-2 border-slate-400"></div>
                 <span className="text-slate-600">Single Delivery</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-red-600 border-2 border-red-800"></div>
+                <span className="text-slate-600 font-semibold">⚠️ Overbooked Day</span>
               </div>
             </div>
           )}
@@ -1336,15 +1344,29 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
             <div 
               key={dayISO} 
               data-calendar-date={dayISO}
-              className={`bg-white p-2 min-h-[140px] transition-all ${isToday ? 'bg-blue-50' : ''}`}
+              className={`p-2 min-h-[140px] transition-all ${
+                isOverbooked 
+                  ? 'bg-red-600 border-2 border-red-800 shadow-lg' 
+                  : isToday 
+                  ? 'bg-blue-50 border-2 border-blue-300' 
+                  : 'bg-white'
+              }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <div className={`text-xs font-medium ${isToday ? 'text-blue-600 font-bold' : 'text-slate-600'}`}>
+                <div className={`text-xs font-medium flex items-center gap-1 ${
+                  isOverbooked 
+                    ? 'text-white font-bold' 
+                    : isToday 
+                    ? 'text-blue-600 font-bold' 
+                    : 'text-slate-600'
+                }`}>
+                  {isOverbooked && <span className="text-sm">⚠️</span>}
                   {dayNum}
                   {isToday && <span className="ml-1 text-[10px]">Today</span>}
+                  {isOverbooked && <span className="ml-1 text-[9px] px-1 py-0.5 bg-white text-red-600 rounded font-bold">OVER</span>}
                 </div>
                 <div className={`text-[10px] font-semibold ${
-                  isOverbooked ? 'text-red-600' : 
+                  isOverbooked ? 'text-white' :
                   available === 0 ? 'text-amber-600' : 
                   'text-slate-500'
                 }`}>

@@ -151,6 +151,11 @@ type RouteConfig = {
   legA?: { assignedDrivers: string[] };  // For two-leg routes
   legB?: { assignedDrivers: string[] };  // For two-leg routes
   assignedDrivers?: string[];            // For single-leg routes
+  locations: {
+    putIns: string[];
+    takeOuts: string[];
+    handoffs?: string[];  // Only for two-leg routes
+  };
 };
 
 function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
@@ -164,7 +169,12 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
       pricing: 400,
       driverCapacity: 8,
       legA: { assignedDrivers: ["Mike T.", "Sarah K.", "Tom R."] },
-      legB: { assignedDrivers: ["Lisa M.", "James P.", "Carlos R."] }
+      legB: { assignedDrivers: ["Lisa M.", "James P.", "Carlos R."] },
+      locations: {
+        putIns: ["Corn Creek", "Indian Creek"],
+        takeOuts: ["Hammer Creek", "Carey Creek"],
+        handoffs: ["Stanley Shuttle Yard", "Challis Hub"]
+      }
     },
     { 
       id: "r2", 
@@ -174,7 +184,11 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
       status: "Active",
       pricing: 350,
       driverCapacity: 8,
-      assignedDrivers: ["Mike T.", "Sarah K.", "Emma W."]
+      assignedDrivers: ["Mike T.", "Sarah K.", "Emma W."],
+      locations: {
+        putIns: ["Boundary Creek", "Indian Creek"],
+        takeOuts: ["Vinegar Creek", "Cache Bar"]
+      }
     },
   ]);
 
@@ -236,6 +250,13 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Driver Capacity:</span>
                 <span className="font-semibold">{route.driverCapacity} drivers/day</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Locations:</span>
+                <span className="font-semibold text-xs">
+                  {route.locations.putIns.length} put-ins • {route.locations.takeOuts.length} take-outs
+                  {route.type === "Two-Leg" && ` • ${route.locations.handoffs?.length || 0} handoffs`}
+                </span>
               </div>
               
               {/* Driver assignments by leg */}
@@ -565,6 +586,154 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
                   </select>
                 </div>
               )}
+
+              {/* Location Management */}
+              <div className="pt-4 border-t">
+                <h4 className="font-semibold mb-3">Location Management</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Put-In Locations */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Put-In Locations ({editingRoute.locations.putIns.length})
+                    </label>
+                    <div className="border rounded-xl p-3 bg-slate-50 space-y-2 max-h-32 overflow-y-auto">
+                      {editingRoute.locations.putIns.map((loc, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span>{loc}</span>
+                          <button
+                            onClick={() => {
+                              const updated = editingRoute.locations.putIns.filter((_, i) => i !== idx);
+                              setEditingRoute({
+                                ...editingRoute,
+                                locations: { ...editingRoute.locations, putIns: updated }
+                              });
+                            }}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Add new put-in..."
+                      className="mt-2 w-full text-sm rounded-lg border px-3 py-1.5"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const newLoc = e.currentTarget.value.trim();
+                          if (!editingRoute.locations.putIns.includes(newLoc)) {
+                            setEditingRoute({
+                              ...editingRoute,
+                              locations: {
+                                ...editingRoute.locations,
+                                putIns: [...editingRoute.locations.putIns, newLoc]
+                              }
+                            });
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Take-Out Locations */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Take-Out Locations ({editingRoute.locations.takeOuts.length})
+                    </label>
+                    <div className="border rounded-xl p-3 bg-slate-50 space-y-2 max-h-32 overflow-y-auto">
+                      {editingRoute.locations.takeOuts.map((loc, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span>{loc}</span>
+                          <button
+                            onClick={() => {
+                              const updated = editingRoute.locations.takeOuts.filter((_, i) => i !== idx);
+                              setEditingRoute({
+                                ...editingRoute,
+                                locations: { ...editingRoute.locations, takeOuts: updated }
+                              });
+                            }}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Add new take-out..."
+                      className="mt-2 w-full text-sm rounded-lg border px-3 py-1.5"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const newLoc = e.currentTarget.value.trim();
+                          if (!editingRoute.locations.takeOuts.includes(newLoc)) {
+                            setEditingRoute({
+                              ...editingRoute,
+                              locations: {
+                                ...editingRoute.locations,
+                                takeOuts: [...editingRoute.locations.takeOuts, newLoc]
+                              }
+                            });
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Handoff Points (Two-Leg Routes Only) */}
+                {editingRoute.type === "Two-Leg" && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Handoff Points ({editingRoute.locations.handoffs?.length || 0})
+                    </label>
+                    <div className="border rounded-xl p-3 bg-slate-50 space-y-2 max-h-32 overflow-y-auto">
+                      {editingRoute.locations.handoffs?.map((loc, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span>{loc}</span>
+                          <button
+                            onClick={() => {
+                              const updated = editingRoute.locations.handoffs!.filter((_, i) => i !== idx);
+                              setEditingRoute({
+                                ...editingRoute,
+                                locations: { ...editingRoute.locations, handoffs: updated }
+                              });
+                            }}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Add new handoff point..."
+                      className="mt-2 w-full text-sm rounded-lg border px-3 py-1.5"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const newLoc = e.currentTarget.value.trim();
+                          const current = editingRoute.locations.handoffs || [];
+                          if (!current.includes(newLoc)) {
+                            setEditingRoute({
+                              ...editingRoute,
+                              locations: {
+                                ...editingRoute.locations,
+                                handoffs: [...current, newLoc]
+                              }
+                            });
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Pricing Info */}
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm">

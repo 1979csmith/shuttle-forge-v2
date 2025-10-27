@@ -706,7 +706,6 @@ function RouteDispatchPage() {
           {mode === 'list' && (
             <CarsMovedTodayPanel jobs={jobs} currentDate={currentDate} />
           )}
-          <CapacityPanel capacityByDay={byDayCapacity} overbookedDays={overbookedDays} todayISO={currentDate} />
         </div>
       </div>
     </div>
@@ -1655,73 +1654,3 @@ function CarsMovedTodayPanel({ jobs, currentDate }: { jobs: Job[]; currentDate: 
   );
 }
 
-function CapacityPanel({ capacityByDay, overbookedDays, todayISO }: { 
-  capacityByDay: Map<string, DayCapacity>; 
-  overbookedDays: string[]; 
-  todayISO: string 
-}) {
-  const [expandedCapacity, setExpandedCapacity] = useState(true);
-  const [expandedOverbooked, setExpandedOverbooked] = useState(true);
-  
-  const rows = Array.from(capacityByDay.entries()).sort((a, b) => a[0] < b[0] ? -1 : 1);
-  
-  return (
-    <div className="rounded-2xl border bg-white">
-      {/* Capacity & Warnings Section */}
-      <div className="border-b">
-        <button
-          onClick={() => setExpandedCapacity(!expandedCapacity)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
-        >
-          <span className="font-semibold">Capacity & Warnings</span>
-          <span className="text-slate-400">
-            {expandedCapacity ? '−' : '+'}
-          </span>
-        </button>
-        {expandedCapacity && (
-          <div className="px-4 pb-4 space-y-2 text-sm">
-            {rows.map(([d, v]) => {
-              const over = v.cars > v.shuttleOnDuty;
-              const cls = over ? "text-red-700" : "text-slate-700";
-              return (
-                <div key={d} className="flex items-center justify-between">
-                  <span className={cls}>{d}</span>
-                  <span className={cls}>{v.cars} cars / {v.shuttleOnDuty} drivers</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Overbooked Section */}
-      {overbookedDays.length > 0 && (
-        <div className="border-b">
-          <button
-            onClick={() => setExpandedOverbooked(!expandedOverbooked)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
-          >
-            <span className="font-semibold text-red-800">Overbooked</span>
-            <span className="text-slate-400">
-              {expandedOverbooked ? '−' : '+'}
-            </span>
-          </button>
-          {expandedOverbooked && (
-            <div className="px-4 pb-4">
-              <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800">
-                <ul className="list-disc list-inside">
-                  {overbookedDays.map(d => (<li key={d}>{d}</li>))}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Today indicator */}
-      <div className="px-4 py-2">
-        <div className="rounded border bg-slate-50 p-2 text-xs text-slate-700">Today: {todayISO}</div>
-      </div>
-    </div>
-  );
-}

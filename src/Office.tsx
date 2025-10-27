@@ -1,0 +1,400 @@
+import { useState } from "react";
+
+/**
+ * Office — Admin Hub
+ * 
+ * Central place for:
+ * - Managing drivers (add/remove, set capacity)
+ * - Managing routes (add/edit routes)
+ * - Managing locations (put-ins, take-outs, handoff points)
+ * - System settings
+ * - Reports & analytics
+ */
+
+export default function Office() {
+  const [activeTab, setActiveTab] = useState<"drivers" | "routes" | "locations" | "settings">("drivers");
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">ShuttleForge — Office</h1>
+            <p className="text-sm text-slate-600">Admin & Configuration</p>
+          </div>
+        </header>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-2 border-b">
+          <button
+            onClick={() => setActiveTab("drivers")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+              activeTab === "drivers"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Drivers
+          </button>
+          <button
+            onClick={() => setActiveTab("routes")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+              activeTab === "routes"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Routes
+          </button>
+          <button
+            onClick={() => setActiveTab("locations")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+              activeTab === "locations"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Locations
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+              activeTab === "settings"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Settings
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-6">
+          {activeTab === "drivers" && <DriversPanel />}
+          {activeTab === "routes" && <RoutesPanel />}
+          {activeTab === "locations" && <LocationsPanel />}
+          {activeTab === "settings" && <SettingsPanel />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Drivers Panel ---------------- */
+
+function DriversPanel() {
+  const [drivers, setDrivers] = useState([
+    { id: "d1", name: "Mike T.", type: "Shuttle", status: "Active", phone: "(208) 555-0101" },
+    { id: "d2", name: "Sarah K.", type: "Van", status: "Active", phone: "(208) 555-0102" },
+    { id: "d3", name: "Tom R.", type: "Shuttle", status: "Active", phone: "(208) 555-0103" },
+    { id: "d4", name: "Lisa M.", type: "Van", status: "Active", phone: "(208) 555-0104" },
+    { id: "d5", name: "James P.", type: "Shuttle", status: "Off Duty", phone: "(208) 555-0105" },
+  ]);
+
+  const [showAddDriver, setShowAddDriver] = useState(false);
+  const [newDriver, setNewDriver] = useState({ name: "", type: "Shuttle", phone: "" });
+
+  function addDriver() {
+    if (!newDriver.name) return;
+    const id = `d${drivers.length + 1}`;
+    setDrivers([...drivers, { id, ...newDriver, status: "Active" }]);
+    setNewDriver({ name: "", type: "Shuttle", phone: "" });
+    setShowAddDriver(false);
+  }
+
+  function removeDriver(id: string) {
+    if (confirm("Remove this driver?")) {
+      setDrivers(drivers.filter(d => d.id !== id));
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Driver Management</h2>
+        <button
+          onClick={() => setShowAddDriver(true)}
+          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+        >
+          + Add Driver
+        </button>
+      </div>
+
+      {/* Drivers Table */}
+      <div className="rounded-2xl border bg-white overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-700">
+            <tr>
+              <th className="text-left font-semibold px-4 py-3">Name</th>
+              <th className="text-left font-semibold px-4 py-3">Type</th>
+              <th className="text-left font-semibold px-4 py-3">Phone</th>
+              <th className="text-left font-semibold px-4 py-3">Status</th>
+              <th className="text-left font-semibold px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drivers.map(driver => (
+              <tr key={driver.id} className="border-t">
+                <td className="px-4 py-3 font-medium">{driver.name}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    driver.type === "Van" ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-blue-50 text-blue-700 border border-blue-200"
+                  }`}>
+                    {driver.type}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-slate-600">{driver.phone}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    driver.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-50 text-slate-700 border border-slate-200"
+                  }`}>
+                    {driver.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => removeDriver(driver.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add Driver Modal */}
+      {showAddDriver && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl border">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add New Driver</h3>
+              <button onClick={() => setShowAddDriver(false)} className="text-slate-500 hover:text-slate-700">✕</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  placeholder="e.g., John Smith"
+                  value={newDriver.name}
+                  onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                <select
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  value={newDriver.type}
+                  onChange={(e) => setNewDriver({ ...newDriver, type: e.target.value })}
+                >
+                  <option value="Shuttle">Shuttle Driver</option>
+                  <option value="Van">Van Driver</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  placeholder="(208) 555-0100"
+                  value={newDriver.phone}
+                  onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowAddDriver(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addDriver}
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700"
+              >
+                Add Driver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Routes Panel ---------------- */
+
+function RoutesPanel() {
+  const [routes] = useState([
+    { id: "r1", name: "Main Salmon", duration: "6 days", type: "Two-Leg", status: "Active" },
+    { id: "r2", name: "Middle Fork", duration: "5 days", type: "Single-Leg", status: "Active" },
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Route Management</h2>
+        <button className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+          + Add Route
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {routes.map(route => (
+          <div key={route.id} className="rounded-2xl border bg-white p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-lg">{route.name}</h3>
+                <p className="text-sm text-slate-600">{route.duration} • {route.type}</p>
+              </div>
+              <span className="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {route.status}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button className="flex-1 px-3 py-2 rounded-xl border text-sm hover:bg-slate-50">Edit</button>
+              <button className="px-3 py-2 rounded-xl border text-sm text-red-600 hover:bg-red-50">Disable</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Locations Panel ---------------- */
+
+function LocationsPanel() {
+  const [locations] = useState({
+    putIns: ["Corn Creek", "Indian Creek", "Boundary Creek"],
+    takeOuts: ["Hammer Creek", "Carey Creek", "Vinegar Creek"],
+    handoffs: ["Stanley Shuttle Yard", "Challis Hub"],
+  });
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Location Management</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Put-Ins */}
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Put-In Locations</h3>
+            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
+          </div>
+          <ul className="space-y-2">
+            {locations.putIns.map((loc, i) => (
+              <li key={i} className="flex items-center justify-between text-sm">
+                <span>{loc}</span>
+                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Take-Outs */}
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Take-Out Locations</h3>
+            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
+          </div>
+          <ul className="space-y-2">
+            {locations.takeOuts.map((loc, i) => (
+              <li key={i} className="flex items-center justify-between text-sm">
+                <span>{loc}</span>
+                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Handoffs */}
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Handoff Points</h3>
+            <button className="text-blue-600 text-sm hover:text-blue-700">+ Add</button>
+          </div>
+          <ul className="space-y-2">
+            {locations.handoffs.map((loc, i) => (
+              <li key={i} className="flex items-center justify-between text-sm">
+                <span>{loc}</span>
+                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Settings Panel ---------------- */
+
+function SettingsPanel() {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">System Settings</h2>
+
+      <div className="rounded-2xl border bg-white p-4 space-y-4">
+        <div>
+          <h3 className="font-semibold mb-2">Capacity Settings</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Max Shuttle Drivers/Day</label>
+              <input type="number" defaultValue={8} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Min Van Drivers/Day</label>
+              <input type="number" defaultValue={1} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2">Scheduling Rules</h3>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" defaultChecked className="rounded" />
+              <span className="text-sm">Enforce D-1 take-out rule (Leg B must be 1 day before trip ends)</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" defaultChecked className="rounded" />
+              <span className="text-sm">Require van driver on all delivery days</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" defaultChecked className="rounded" />
+              <span className="text-sm">Warn when moving cars on launch day</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2">Notifications</h3>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" defaultChecked className="rounded" />
+              <span className="text-sm">Email alerts for overbooked days</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="rounded" />
+              <span className="text-sm">SMS alerts for urgent deliveries</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t">
+          <button className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

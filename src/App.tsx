@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import Office from "./Office";
 
 /**
  * ShuttleForge — Route Dispatch (supports single- and two-leg jobs)
@@ -831,7 +832,50 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
 
 /* ---------------- Root Component ---------------- */
 
-export default function RouteDispatchPage() {
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<"dispatch" | "office">("dispatch");
+
+  return (
+    <div>
+      {/* Top Navigation */}
+      <nav className="bg-white border-b shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-bold text-slate-900">ShuttleForge</h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage("dispatch")}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                  currentPage === "dispatch"
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                📋 Dispatch
+              </button>
+              <button
+                onClick={() => setCurrentPage("office")}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                  currentPage === "office"
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                🏢 Office
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Page Content */}
+      {currentPage === "dispatch" && <RouteDispatchPage />}
+      {currentPage === "office" && <Office />}
+    </div>
+  );
+}
+
+function RouteDispatchPage() {
   const [activeRoute, setActiveRoute] = useState("main_salmon");
   const route = DEMO_ROUTES.find(r => r.id === activeRoute);
 

@@ -757,8 +757,10 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
   const filteredJobs = useMemo(() => {
     const cutoffDate = addDaysISO(currentDate, daysAhead);
     return jobs.filter(job => {
-      // Check if any leg is within the date range
-      return job.legs.some(leg => leg.date >= currentDate && leg.date <= cutoffDate);
+      // Check if any leg is within the date range (inclusive of today through cutoffDate)
+      return job.legs.some(leg => {
+        return leg.date >= currentDate && leg.date <= cutoffDate;
+      });
     });
   }, [jobs, currentDate, daysAhead]);
 

@@ -858,9 +858,27 @@ export default function RouteDispatchPage() {
 
   const [mode, setMode] = useState<"list" | "timeline" | "calendar">("list");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [draggedItem, setDraggedItem] = useState<{ job: Job; legIndex: number } | null>(null);
+  const [dropWarning, setDropWarning] = useState<string | null>(null);
 
   return (
     <div className="p-6 max-w-7xl mx-auto font-sans space-y-6">
+      {/* Drop Warning */}
+      {dropWarning && (
+        <div className="rounded-xl border-2 border-amber-500 bg-amber-50 p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-semibold text-amber-900 mb-1">⚠️ Confirm Move</div>
+              <div className="text-sm text-amber-800">{dropWarning}</div>
+            </div>
+            <button
+              onClick={() => setDropWarning(null)}
+              className="text-amber-600 hover:text-amber-800 font-bold"
+            >✕</button>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-2">
         {DEMO_ROUTES.map(r => (
@@ -907,7 +925,17 @@ export default function RouteDispatchPage() {
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
           {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} />}
-          {mode === 'calendar' && <CalendarView jobs={jobs} currentDate={currentDate} onSelectJob={setSelectedJob} />}
+          {mode === 'calendar' && (
+            <CalendarView
+              jobs={jobs}
+              currentDate={currentDate}
+              onSelectJob={setSelectedJob}
+              draggedItem={draggedItem}
+              onDragStart={setDraggedItem}
+              onDragEnd={() => setDraggedItem(null)}
+              onDropWarning={setDropWarning}
+            />
+          )}
           {mode === 'timeline' && <TimelineMode jobs={jobs} currentDate={currentDate} />}
         </div>
 
@@ -1168,11 +1196,52 @@ function daysArray(startISO: string, count: number): string[] {
   return arr;
 }
 
+/** Handle drop validation and warnings */
+function handleDrop(
+  targetDate: string,
+  draggedItem: { job: Job; legIndex: number },
+  onDropWarning: (warning: string | null) => void,
+  onDragEnd: () => void
+) {
+  const { job, legIndex } = draggedItem;
+  const leg = job.legs[legIndex];
+  const isLegB = leg.leg === "B";
+  const isLegA = leg.leg === "A";
+  
+  // Rule 1: Leg B must be at take-out by D-1
+  if (isLegB) {
+    const takeOutDate = job.tripTakeOut;
+    const daysBefore = daysBetween(targetDate, takeOutDate);
+    if (daysBefore < 1) {
+      onDropWarning(`❌ Cannot move Leg B to ${formatMMDDYY(targetDate)}. Car must arrive at take-out by ${formatMMDDYY(addDaysISO(takeOutDate, -1))} (day before trip ends on ${formatMMDDYY(takeOutDate)}).`);
+      onDragEnd();
+      return;
+    }
+  }
+  
+  // Rule 2: If moving from put-in day, warn to contact trip owner
+  if (isLegA) {
+    const putInDate = job.tripPutIn;
+    if (leg.date === putInDate && targetDate !== putInDate) {
+      onDropWarning(`⚠️ Moving ${job.car.owner}'s car from launch day (${formatMMDDYY(putInDate)}). Please contact trip owner to confirm car can be picked up on ${formatMMDDYY(targetDate)} instead.`);
+      // Allow the move but show warning
+    }
+  }
+  
+  // TODO: Actually update the job date here
+  console.log(`Move ${job.id} Leg ${leg.leg || "single"} to ${targetDate}`);
+  onDragEnd();
+}
+
 /** Calendar grid (7 columns x N weeks). Cards render on their leg date(s) */
-function CalendarView({ jobs, currentDate, onSelectJob }: {
+function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning }: {
   jobs: Job[];
   currentDate: string;
   onSelectJob: (job: Job) => void;
+  draggedItem: { job: Job; legIndex: number } | null;
+  onDragStart: (item: { job: Job; legIndex: number }) => void;
+  onDragEnd: () => void;
+  onDropWarning: (warning: string | null) => void;
 }) {
   // Show a 3-week window centered around current week for dispatching
   const weekStart = startOfWeek(currentDate);            // Sunday
@@ -1254,16 +1323,51 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
                     legIndex={legIndex}
                     currentDate={currentDate}
                     onClick={() => onSelectJob(job)}
+                    onDragStart={() => onDragStart({ job, legIndex })}
+                    onDragEnd={onDragEnd}
+                    isDragging={draggedItem?.job.id === job.id && draggedItem?.legIndex === legIndex}
                   />
                 ))}
                 
-                {/* Empty slots for available drivers */}
-                {available > 0 && Array.from({ length: Math.min(available, 3) }).map((_, idx) => (
-                  <div 
-                    key={`empty-${idx}`} 
-                    className="w-full h-6 rounded border border-dashed border-slate-300 bg-slate-50/50"
-                  />
-                ))}
+                {/* Empty slots for available drivers - color-coded by leg type */}
+                {available > 0 && (() => {
+                  // Show empty slots (up to 3 visible)
+                  const slots = [];
+                  const maxVisible = Math.min(available, 3);
+                  
+                  for (let i = 0; i < maxVisible; i++) {
+                    // Alternate between Leg A (blue) and Leg B (purple) slots, with gray for single-leg
+                    const slotType = i % 3 === 0 ? "A" : i % 3 === 1 ? "B" : "single";
+                    const bgColor = slotType === "A" ? "bg-blue-50/50 border-blue-300" :
+                                    slotType === "B" ? "bg-purple-50/50 border-purple-300" :
+                                    "bg-slate-50/50 border-slate-300";
+                    
+                    slots.push(
+                      <div
+                        key={`empty-${i}`}
+                        className={`w-full h-6 rounded border border-dashed ${bgColor} flex items-center justify-center text-[9px] text-slate-400`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.add('ring-2', 'ring-blue-400');
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
+                          if (draggedItem) {
+                            handleDrop(dayISO, draggedItem, onDropWarning, onDragEnd);
+                          }
+                        }}
+                      >
+                        {slotType === "A" && "A"}
+                        {slotType === "B" && "B"}
+                      </div>
+                    );
+                  }
+                  return slots;
+                })()}
                 {available > 3 && (
                   <div className="text-[9px] text-center text-slate-400">
                     +{available - 3} more
@@ -1280,11 +1384,14 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
 
 /* ---------------- Vehicle Card (calendar cell) ---------------- */
 
-function VehicleCard({ job, legIndex, currentDate, onClick }: {
+function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragEnd, isDragging }: {
   job: Job;
   legIndex: number;
   currentDate: string;
   onClick: () => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean;
 }) {
   const leg = job.legs[legIndex];
   const days = daysBetween(currentDate, leg.date);
@@ -1316,7 +1423,17 @@ function VehicleCard({ job, legIndex, currentDate, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-lg border ${legColorCls} px-2 py-1.5 hover:shadow transition text-xs`}
+      draggable={!!onDragStart}
+      onDragStart={(e) => {
+        if (onDragStart) {
+          e.dataTransfer.effectAllowed = "move";
+          onDragStart();
+        }
+      }}
+      onDragEnd={onDragEnd}
+      className={`w-full text-left rounded-lg border ${legColorCls} px-2 py-1.5 hover:shadow transition text-xs cursor-move ${
+        isDragging ? 'opacity-50 scale-95' : ''
+      }`}
     >
       <div className="flex items-center justify-between mb-0.5">
         <div className="font-semibold truncate text-xs">

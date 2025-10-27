@@ -187,15 +187,15 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
     currentDate: TODAY,
     drivers: DEMO_DRIVERS,
     jobs: [
-      // Oct 26 (TODAY) - Leg A moves (6 cars)
+      // Oct 26 take-out - Leg B deliveries on Oct 25 (D-1)
       {
         id: "J-1001",
         car: { owner: "Anderson", makeModel: "Toyota 4Runner", plate: "ID-7S1234", year: 2019, color: "Silver" },
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-21", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -204,8 +204,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-21", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -214,8 +214,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-21", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -224,8 +224,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -234,8 +234,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
       {
@@ -244,8 +244,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-20",
         tripTakeOut: "2025-10-26",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-26", depart: "08:30", arrive: "12:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:30", arrive: "18:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-25", depart: "12:30", arrive: "18:00", driverId: "D1" },
         ],
       },
 
@@ -256,8 +256,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -266,8 +266,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -276,8 +276,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -286,8 +286,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -296,8 +296,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
       {
@@ -306,8 +306,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:30", arrive: "12:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:30", arrive: "18:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:30", arrive: "18:00", driverId: "D1" },
         ],
       },
       {
@@ -316,8 +316,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-28",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-28", depart: "08:45", arrive: "12:15", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:45", arrive: "18:15", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-23", depart: "08:45", arrive: "12:15", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-27", depart: "12:45", arrive: "18:15", driverId: "D2" },
         ],
       },
 
@@ -328,8 +328,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -338,8 +338,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -348,8 +348,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -358,8 +358,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -368,8 +368,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
       {
@@ -378,8 +378,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:30", arrive: "12:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:30", arrive: "18:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:30", arrive: "18:00", driverId: "D1" },
         ],
       },
       {
@@ -388,8 +388,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "08:45", arrive: "12:15", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:45", arrive: "18:15", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "08:45", arrive: "12:15", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "12:45", arrive: "18:15", driverId: "D2" },
         ],
       },
       {
@@ -398,8 +398,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-30",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-30", depart: "09:00", arrive: "12:30", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "13:00", arrive: "18:30", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-25", depart: "09:00", arrive: "12:30", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-29", depart: "13:00", arrive: "18:30", driverId: "D3" },
         ],
       },
 
@@ -410,8 +410,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-27",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -420,8 +420,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-27",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -430,8 +430,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-27",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -440,8 +440,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-27",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -450,8 +450,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-27",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-22", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-26", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
 
@@ -462,8 +462,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -472,8 +472,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -482,8 +482,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -492,8 +492,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -502,8 +502,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
       {
@@ -512,8 +512,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-29",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-29", depart: "08:30", arrive: "12:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-30", depart: "12:30", arrive: "18:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-24", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "12:30", arrive: "18:00", driverId: "D1" },
         ],
       },
 
@@ -524,8 +524,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:00", arrive: "10:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:00", arrive: "16:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:00", arrive: "10:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:00", arrive: "16:30", driverId: "D2" },
         ],
       },
       {
@@ -534,8 +534,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:15", arrive: "10:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:15", arrive: "16:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:15", arrive: "10:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:15", arrive: "16:45", driverId: "D3" },
         ],
       },
       {
@@ -544,8 +544,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "07:30", arrive: "11:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "11:30", arrive: "17:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "07:30", arrive: "11:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
       {
@@ -554,8 +554,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:00", arrive: "11:30", driverId: "D1" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:00", arrive: "17:30", driverId: "D2" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:00", arrive: "11:30", driverId: "D1" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:00", arrive: "17:30", driverId: "D2" },
         ],
       },
       {
@@ -564,8 +564,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:15", arrive: "11:45", driverId: "D2" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:15", arrive: "17:45", driverId: "D3" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:15", arrive: "11:45", driverId: "D2" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:15", arrive: "17:45", driverId: "D3" },
         ],
       },
       {
@@ -574,8 +574,8 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-26",
         tripTakeOut: "2025-11-01",
         legs: [
-          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-11-01", depart: "08:30", arrive: "12:00", driverId: "D3" },
-          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-11-02", depart: "12:30", arrive: "18:00", driverId: "D1" },
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "08:30", arrive: "12:00", driverId: "D3" },
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "12:30", arrive: "18:00", driverId: "D1" },
         ],
       },
     ],
@@ -591,7 +591,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-26",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:15", arrive: "12:30", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-25", depart: "07:15", arrive: "12:30", driverId: "D1" },
         ],
       },
       {
@@ -600,7 +600,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-26",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:30", arrive: "12:45", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-25", depart: "07:30", arrive: "12:45", driverId: "D2" },
         ],
       },
       {
@@ -609,7 +609,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-26",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:00", arrive: "13:15", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-25", depart: "08:00", arrive: "13:15", driverId: "D3" },
         ],
       },
       {
@@ -618,7 +618,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-26",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:15", arrive: "13:30", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-25", depart: "08:15", arrive: "13:30", driverId: "D1" },
         ],
       },
       {
@@ -627,7 +627,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-21",
         tripTakeOut: "2025-10-26",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:30", arrive: "13:45", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-25", depart: "08:30", arrive: "13:45", driverId: "D2" },
         ],
       },
 
@@ -638,7 +638,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:00", arrive: "12:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
       },
       {
@@ -647,7 +647,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
       },
       {
@@ -656,7 +656,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:30", arrive: "12:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
       },
       {
@@ -665,7 +665,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:00", arrive: "13:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
       },
       {
@@ -674,7 +674,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:15", arrive: "13:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
       },
       {
@@ -683,7 +683,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-22",
         tripTakeOut: "2025-10-27",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:30", arrive: "13:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-26", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
       },
 
@@ -694,7 +694,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:00", arrive: "12:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
       },
       {
@@ -703,7 +703,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:15", arrive: "12:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
       },
       {
@@ -712,7 +712,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:30", arrive: "12:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
       },
       {
@@ -721,7 +721,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:00", arrive: "13:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
       },
       {
@@ -730,7 +730,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:15", arrive: "13:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
       },
       {
@@ -739,7 +739,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:30", arrive: "13:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
       },
       {
@@ -748,7 +748,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-23",
         tripTakeOut: "2025-10-28",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:45", arrive: "14:00", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-27", depart: "08:45", arrive: "14:00", driverId: "D1" },
         ],
       },
 
@@ -759,7 +759,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:00", arrive: "12:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:00", arrive: "12:15", driverId: "D1" },
         ],
       },
       {
@@ -768,7 +768,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:15", arrive: "12:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:15", arrive: "12:30", driverId: "D2" },
         ],
       },
       {
@@ -777,7 +777,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "07:30", arrive: "12:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "07:30", arrive: "12:45", driverId: "D3" },
         ],
       },
       {
@@ -786,7 +786,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:00", arrive: "13:15", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:00", arrive: "13:15", driverId: "D1" },
         ],
       },
       {
@@ -795,7 +795,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:15", arrive: "13:30", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:15", arrive: "13:30", driverId: "D2" },
         ],
       },
       {
@@ -804,7 +804,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:30", arrive: "13:45", driverId: "D3" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:30", arrive: "13:45", driverId: "D3" },
         ],
       },
       {
@@ -813,7 +813,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "08:45", arrive: "14:00", driverId: "D1" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "08:45", arrive: "14:00", driverId: "D1" },
         ],
       },
       {
@@ -822,7 +822,7 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
         tripPutIn: "2025-10-24",
         tripTakeOut: "2025-10-29",
         legs: [
-          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-29", depart: "09:00", arrive: "14:15", driverId: "D2" },
+          { startLocation: "Boundary Creek", endLocation: "Cache Bar", date: "2025-10-28", depart: "09:00", arrive: "14:15", driverId: "D2" },
         ],
       },
     ],

@@ -248,10 +248,6 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
                 <span className="font-semibold">${route.pricing}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Driver Capacity:</span>
-                <span className="font-semibold">{route.driverCapacity} drivers/day</span>
-              </div>
-              <div className="flex items-center justify-between">
                 <span className="text-slate-600">Locations:</span>
                 <span className="font-semibold text-xs">
                   {route.locations.putIns.length} put-ins • {route.locations.takeOuts.length} take-outs
@@ -355,20 +351,6 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Trip Duration</label>
-                  <input
-                    type="text"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
-                    placeholder="e.g., 6 days"
-                    value={editingRoute.duration}
-                    onChange={(e) => setEditingRoute({ ...editingRoute, duration: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Pricing & Capacity */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Base Price (per vehicle)
                   </label>
@@ -381,17 +363,6 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
                       onChange={(e) => setEditingRoute({ ...editingRoute, pricing: Number(e.target.value) })}
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Max Drivers per Day
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
-                    value={editingRoute.driverCapacity}
-                    onChange={(e) => setEditingRoute({ ...editingRoute, driverCapacity: Number(e.target.value) })}
-                  />
                 </div>
               </div>
 

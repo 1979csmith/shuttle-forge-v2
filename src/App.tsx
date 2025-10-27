@@ -877,6 +877,18 @@ export default function RouteDispatchPage() {
       return job;
     }));
   };
+  
+  // Function to update a job's leg location
+  const updateJobLegLocation = (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => {
+    setJobs(prevJobs => prevJobs.map(job => {
+      if (job.id === jobId) {
+        const updatedLegs = [...job.legs];
+        updatedLegs[legIndex] = { ...updatedLegs[legIndex], [field]: value };
+        return { ...job, legs: updatedLegs };
+      }
+      return job;
+    }));
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto font-sans space-y-6">
@@ -977,6 +989,7 @@ export default function RouteDispatchPage() {
               onDragEnd={() => setDraggedItem(null)}
               onDropWarning={setDropWarning}
               onUpdateJobLegDate={updateJobLegDate}
+              onUpdateJobLegLocation={updateJobLegLocation}
             />
           )}
           {mode === 'timeline' && <TimelineMode jobs={jobs} currentDate={currentDate} />}
@@ -1291,7 +1304,7 @@ function handleDrop(
 }
 
 /** Calendar grid (7 columns x N weeks). Cards render on their leg date(s) */
-function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate }: {
+function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate, onUpdateJobLegLocation }: {
   jobs: Job[];
   currentDate: string;
   onSelectJob: (job: Job) => void;
@@ -1300,6 +1313,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
   onDragEnd: () => void;
   onDropWarning: (warning: string | null) => void;
   onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void;
+  onUpdateJobLegLocation: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
 }) {
   // Show a 3-week window centered around current week for dispatching
   const weekStart = startOfWeek(currentDate);            // Sunday
@@ -1384,6 +1398,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
                     onDragStart={() => onDragStart({ job, legIndex })}
                     onDragEnd={onDragEnd}
                     isDragging={draggedItem?.job.id === job.id && draggedItem?.legIndex === legIndex}
+                    onUpdateLocation={onUpdateJobLegLocation}
                   />
                 ))}
                 
@@ -1442,7 +1457,7 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
 
 /* ---------------- Vehicle Card (calendar cell) ---------------- */
 
-function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragEnd, isDragging }: {
+function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragEnd, isDragging, onUpdateLocation }: {
   job: Job;
   legIndex: number;
   currentDate: string;
@@ -1450,7 +1465,10 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
   onDragStart?: () => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
+  onUpdateLocation?: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
 }) {
+  const [editingField, setEditingField] = useState<'start' | 'end' | null>(null);
+  const [editValue, setEditValue] = useState('');
   const leg = job.legs[legIndex];
   const days = daysBetween(currentDate, leg.date);
   const label = days <= 0 ? "Due" : (days + "d");
@@ -1516,8 +1534,88 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
         Launch: {formatMMDDYY(job.tripPutIn)} • Out: {formatMMDDYY(job.tripTakeOut)}
       </div>
       
-      <div className="text-[10px] text-slate-700 truncate">
-        {leg.startLocation} → {leg.endLocation}
+      <div className="text-[10px] text-slate-700 flex items-center gap-1">
+        {editingField === 'start' && onUpdateLocation ? (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => {
+              if (editValue.trim()) {
+                onUpdateLocation(job.id, legIndex, 'startLocation', editValue.trim());
+              }
+              setEditingField(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (editValue.trim()) {
+                  onUpdateLocation(job.id, legIndex, 'startLocation', editValue.trim());
+                }
+                setEditingField(null);
+              } else if (e.key === 'Escape') {
+                setEditingField(null);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            autoFocus
+            className="px-1 py-0.5 border border-blue-400 rounded bg-white text-[10px] w-24"
+          />
+        ) : (
+          <span
+            onClick={(e) => {
+              if (onUpdateLocation) {
+                e.stopPropagation();
+                setEditValue(leg.startLocation);
+                setEditingField('start');
+              }
+            }}
+            className={onUpdateLocation ? 'cursor-pointer hover:bg-blue-50 px-1 rounded' : ''}
+          >
+            {leg.startLocation}
+          </span>
+        )}
+        <span>→</span>
+        {editingField === 'end' && onUpdateLocation ? (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => {
+              if (editValue.trim()) {
+                onUpdateLocation(job.id, legIndex, 'endLocation', editValue.trim());
+              }
+              setEditingField(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (editValue.trim()) {
+                  onUpdateLocation(job.id, legIndex, 'endLocation', editValue.trim());
+                }
+                setEditingField(null);
+              } else if (e.key === 'Escape') {
+                setEditingField(null);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            autoFocus
+            className="px-1 py-0.5 border border-blue-400 rounded bg-white text-[10px] w-24"
+          />
+        ) : (
+          <span
+            onClick={(e) => {
+              if (onUpdateLocation) {
+                e.stopPropagation();
+                setEditValue(leg.endLocation);
+                setEditingField('end');
+              }
+            }}
+            className={onUpdateLocation ? 'cursor-pointer hover:bg-blue-50 px-1 rounded' : ''}
+          >
+            {leg.endLocation}
+          </span>
+        )}
       </div>
       <div className="text-[10px] text-slate-600 truncate">{job.car.makeModel} • {job.car.plate}</div>
       <div className="text-[9px] text-slate-500 mt-0.5">

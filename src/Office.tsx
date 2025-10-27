@@ -12,7 +12,7 @@ import { useState } from "react";
  */
 
 export default function Office() {
-  const [activeTab, setActiveTab] = useState<"drivers" | "routes" | "locations" | "settings">("drivers");
+  const [activeTab, setActiveTab] = useState<"routes" | "locations" | "settings">("routes");
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
@@ -28,16 +28,6 @@ export default function Office() {
         {/* Tabs */}
         <div className="flex items-center gap-2 border-b">
           <button
-            onClick={() => setActiveTab("drivers")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeTab === "drivers"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Drivers
-          </button>
-          <button
             onClick={() => setActiveTab("routes")}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
               activeTab === "routes"
@@ -45,7 +35,7 @@ export default function Office() {
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            Routes
+            Routes & Drivers
           </button>
           <button
             onClick={() => setActiveTab("locations")}
@@ -71,12 +61,22 @@ export default function Office() {
 
         {/* Content */}
         <div className="space-y-6">
-          {activeTab === "drivers" && <DriversPanel />}
-          {activeTab === "routes" && <RoutesPanel />}
+          {activeTab === "routes" && <RoutesAndDriversPanel />}
           {activeTab === "locations" && <LocationsPanel />}
           {activeTab === "settings" && <SettingsPanel />}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- Routes & Drivers Panel (Combined) ---------------- */
+
+function RoutesAndDriversPanel() {
+  return (
+    <div className="space-y-8">
+      <RoutesPanel />
+      <DriversPanel />
     </div>
   );
 }
@@ -112,7 +112,7 @@ function DriversPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Driver Management</h2>
+        <h3 className="text-lg font-semibold">Driver Management</h3>
         <button
           onClick={() => setShowAddDriver(true)}
           className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"

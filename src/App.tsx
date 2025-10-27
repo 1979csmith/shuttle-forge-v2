@@ -1288,23 +1288,29 @@ function VehicleCard({ job, legIndex, currentDate, onClick }: {
 }) {
   const leg = job.legs[legIndex];
   const days = daysBetween(currentDate, leg.date);
-  const urgencyCls = urgencyClass(days);
   const label = days <= 0 ? "Due" : (days + "d");
 
   // Color-code by leg for Main Salmon two-leg jobs
   const isLegA = leg.leg === "A";
   const isLegB = leg.leg === "B";
   
-  // Leg colors (override urgency for non-urgent items)
-  let legColorCls = urgencyCls; // default to urgency
-  if (days > 3) { // only apply leg colors if not urgent
-    if (isLegA) {
-      legColorCls = "bg-blue-50 text-blue-800 border-blue-300";
-    } else if (isLegB) {
-      legColorCls = "bg-purple-50 text-purple-800 border-purple-300";
-    } else {
-      legColorCls = "bg-slate-50 text-slate-800 border-slate-300";
-    }
+  // Always use leg colors for two-leg jobs, use slate for single-leg
+  let legColorCls = "";
+  if (isLegA) {
+    legColorCls = "bg-blue-100 text-blue-900 border-blue-400";
+  } else if (isLegB) {
+    legColorCls = "bg-purple-100 text-purple-900 border-purple-400";
+  } else {
+    legColorCls = "bg-slate-100 text-slate-900 border-slate-400";
+  }
+  
+  // Add urgency border styling
+  const isUrgent = days <= 0;
+  const isWarning = days > 0 && days <= 3;
+  if (isUrgent) {
+    legColorCls = legColorCls.replace(/border-\w+-\d+/, "border-red-600 border-2");
+  } else if (isWarning) {
+    legColorCls = legColorCls.replace(/border-\w+-\d+/, "border-amber-500 border-2");
   }
 
   return (
@@ -1315,10 +1321,14 @@ function VehicleCard({ job, legIndex, currentDate, onClick }: {
       <div className="flex items-center justify-between mb-0.5">
         <div className="font-semibold truncate text-xs">
           {jobNumber(job)}
-          {isLegA && <span className="ml-1 text-[9px] font-bold text-blue-600">A</span>}
-          {isLegB && <span className="ml-1 text-[9px] font-bold text-purple-600">B</span>}
+          {isLegA && <span className="ml-1 text-[9px] font-bold text-blue-700">A</span>}
+          {isLegB && <span className="ml-1 text-[9px] font-bold text-purple-700">B</span>}
         </div>
-        <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px]">{label}</span>
+        <span className={`ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px] ${
+          isUrgent ? 'bg-red-100 text-red-800 border-red-400' :
+          isWarning ? 'bg-amber-100 text-amber-800 border-amber-400' :
+          'bg-slate-100 text-slate-600 border-slate-300'
+        }`}>{label}</span>
       </div>
       
       {/* Trip dates */}

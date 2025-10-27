@@ -1179,13 +1179,16 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
   const gridStart = addDaysISO(weekStart, -7);           // one week before
   const allDays = daysArray(gridStart, 21);              // 3 weeks
 
-  // bucket jobs by day (we display a card on first leg date; small pill on second)
+  // bucket jobs by day - show a card for EACH leg on its scheduled day
   const byDay = useMemo(() => {
-    const map = new Map<string, Job[]>();
+    const map = new Map<string, Array<{ job: Job; legIndex: number }>>();
     for (const day of allDays) map.set(day, []);
     for (const job of jobs) {
-      const first = job.legs[0];
-      if (map.has(first.date)) map.get(first.date)!.push(job);
+      job.legs.forEach((leg, idx) => {
+        if (map.has(leg.date)) {
+          map.get(leg.date)!.push({ job, legIndex: idx });
+        }
+      });
     }
     return map;
   }, [jobs, allDays]);
@@ -1244,10 +1247,11 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
 
               {/* Vehicle cards for this day */}
               <div className="space-y-1">
-                {(byDay.get(dayISO) || []).map(job => (
+                {(byDay.get(dayISO) || []).map(({ job, legIndex }) => (
                   <VehicleCard
-                    key={job.id}
+                    key={`${job.id}-leg${legIndex}`}
                     job={job}
+                    legIndex={legIndex}
                     currentDate={currentDate}
                     onClick={() => onSelectJob(job)}
                   />
@@ -1276,24 +1280,44 @@ function CalendarView({ jobs, currentDate, onSelectJob }: {
 
 /* ---------------- Vehicle Card (calendar cell) ---------------- */
 
-function VehicleCard({ job, currentDate, onClick }: {
+function VehicleCard({ job, legIndex, currentDate, onClick }: {
   job: Job;
+  legIndex: number;
   currentDate: string;
   onClick: () => void;
 }) {
-  const first = job.legs[0];
-  const second = job.legs[1]; // may be undefined for single-leg
-  const days = daysBetween(currentDate, first.date);
-  const cls = urgencyClass(days);
+  const leg = job.legs[legIndex];
+  const days = daysBetween(currentDate, leg.date);
+  const urgencyCls = urgencyClass(days);
   const label = days <= 0 ? "Due" : (days + "d");
+
+  // Color-code by leg for Main Salmon two-leg jobs
+  const isLegA = leg.leg === "A";
+  const isLegB = leg.leg === "B";
+  
+  // Leg colors (override urgency for non-urgent items)
+  let legColorCls = urgencyCls; // default to urgency
+  if (days > 3) { // only apply leg colors if not urgent
+    if (isLegA) {
+      legColorCls = "bg-blue-50 text-blue-800 border-blue-300";
+    } else if (isLegB) {
+      legColorCls = "bg-purple-50 text-purple-800 border-purple-300";
+    } else {
+      legColorCls = "bg-slate-50 text-slate-800 border-slate-300";
+    }
+  }
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-lg border ${cls} px-2 py-1.5 hover:shadow transition text-xs`}
+      className={`w-full text-left rounded-lg border ${legColorCls} px-2 py-1.5 hover:shadow transition text-xs`}
     >
       <div className="flex items-center justify-between mb-0.5">
-        <div className="font-semibold truncate text-xs">{jobNumber(job)}</div>
+        <div className="font-semibold truncate text-xs">
+          {jobNumber(job)}
+          {isLegA && <span className="ml-1 text-[9px] font-bold text-blue-600">A</span>}
+          {isLegB && <span className="ml-1 text-[9px] font-bold text-purple-600">B</span>}
+        </div>
         <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px]">{label}</span>
       </div>
       
@@ -1303,16 +1327,12 @@ function VehicleCard({ job, currentDate, onClick }: {
       </div>
       
       <div className="text-[10px] text-slate-700 truncate">
-        {first.startLocation} → {first.endLocation}
+        {leg.startLocation} → {leg.endLocation}
       </div>
       <div className="text-[10px] text-slate-600 truncate">{job.car.makeModel} • {job.car.plate}</div>
-
-      {/* If there is a Leg B, show a small chip so dispatch sees the second day */}
-      {second && (
-        <div className="mt-1 text-[9px] text-slate-600 truncate">
-          Leg B: {formatMMDDYY(second.date)} {second.depart}
-        </div>
-      )}
+      <div className="text-[9px] text-slate-500 mt-0.5">
+        {formatMMDDYY(leg.date)} {leg.depart}
+      </div>
     </button>
   );
 }

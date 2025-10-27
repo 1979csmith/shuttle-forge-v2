@@ -978,7 +978,7 @@ export default function RouteDispatchPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
-          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} />}
+          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} onUpdateLocation={updateJobLegLocation} />}
           {mode === 'calendar' && (
             <CalendarView
               jobs={jobs}
@@ -1009,9 +1009,17 @@ export default function RouteDispatchPage() {
 
 /* ---------------- List View ---------------- */
 
-function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
+function ListMode({ jobs, currentDate, onUpdateLocation }: { 
+  jobs: Job[]; 
+  currentDate: string;
+  onUpdateLocation: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
+}) {
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
   const [daysAhead, setDaysAhead] = useState<number>(7);
+  const [editingJob, setEditingJob] = useState<string | null>(null);
+  const [editingLeg, setEditingLeg] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<'start' | 'end' | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   function pillFor(leg: Leg) {
     const days = daysBetween(currentDate, leg.date);
@@ -1191,18 +1199,117 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
 
                 {/* Legs */}
                 <div className="space-y-2">
-                  {job.legs.map((leg, idx) => (
+                  {job.legs.map((leg, idx) => {
+                    const isEditingThis = editingJob === job.id && editingLeg === idx;
+                    
+                    return (
                     <div key={idx} className="rounded-lg border border-slate-300 bg-white p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold text-sm">
                           {job.legs.length > 1 ? `Leg ${leg.leg || '?'}` : 'Delivery'}
                         </span>
-                        {pillFor(leg)}
+                        <div className="flex items-center gap-2">
+                          {pillFor(leg)}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isEditingThis) {
+                                setEditingJob(null);
+                                setEditingLeg(null);
+                                setEditingField(null);
+                              } else {
+                                setEditingJob(job.id);
+                                setEditingLeg(idx);
+                              }
+                            }}
+                            className="px-2 py-1 text-xs rounded border border-slate-300 hover:bg-slate-50"
+                          >
+                            {isEditingThis ? '✓ Done' : '✏️ Edit'}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1 text-xs text-slate-700">
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-500">Route:</span>
-                          <span className="font-medium">{leg.startLocation} → {leg.endLocation}</span>
+                          <span className="text-slate-500 w-12">Route:</span>
+                          {isEditingThis && editingField === 'start' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => {
+                                if (editValue.trim()) {
+                                  onUpdateLocation(job.id, idx, 'startLocation', editValue.trim());
+                                }
+                                setEditingField(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  if (editValue.trim()) {
+                                    onUpdateLocation(job.id, idx, 'startLocation', editValue.trim());
+                                  }
+                                  setEditingField(null);
+                                } else if (e.key === 'Escape') {
+                                  setEditingField(null);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="px-2 py-1 border border-blue-400 rounded text-xs flex-1"
+                            />
+                          ) : (
+                            <span
+                              onClick={(e) => {
+                                if (isEditingThis) {
+                                  e.stopPropagation();
+                                  setEditValue(leg.startLocation);
+                                  setEditingField('start');
+                                }
+                              }}
+                              className={`font-medium ${isEditingThis ? 'cursor-pointer hover:bg-blue-50 px-1 rounded' : ''}`}
+                            >
+                              {leg.startLocation}
+                            </span>
+                          )}
+                          <span>→</span>
+                          {isEditingThis && editingField === 'end' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => {
+                                if (editValue.trim()) {
+                                  onUpdateLocation(job.id, idx, 'endLocation', editValue.trim());
+                                }
+                                setEditingField(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  if (editValue.trim()) {
+                                    onUpdateLocation(job.id, idx, 'endLocation', editValue.trim());
+                                  }
+                                  setEditingField(null);
+                                } else if (e.key === 'Escape') {
+                                  setEditingField(null);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="px-2 py-1 border border-blue-400 rounded text-xs flex-1"
+                            />
+                          ) : (
+                            <span
+                              onClick={(e) => {
+                                if (isEditingThis) {
+                                  e.stopPropagation();
+                                  setEditValue(leg.endLocation);
+                                  setEditingField('end');
+                                }
+                              }}
+                              className={`font-medium ${isEditingThis ? 'cursor-pointer hover:bg-blue-50 px-1 rounded' : ''}`}
+                            >
+                              {leg.endLocation}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-slate-500">Date:</span>
@@ -1218,7 +1325,8 @@ function ListMode({ jobs, currentDate }: { jobs: Job[]; currentDate: string }) {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

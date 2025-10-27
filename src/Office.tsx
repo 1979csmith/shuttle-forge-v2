@@ -728,10 +728,101 @@ function RoutesPanel({ driverPool }: { driverPool: typeof DRIVER_POOL }) {
 /* ---------------- Settings Panel ---------------- */
 
 function SettingsPanel() {
+  const [uploadedAgreements, setUploadedAgreements] = useState<{ name: string; date: string; size: string }[]>([
+    { name: "Vehicle Shuttle Agreement 2024.pdf", date: "2024-01-15", size: "245 KB" },
+    { name: "Liability Waiver Form.pdf", date: "2024-01-15", size: "180 KB" },
+  ]);
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newAgreement = {
+        name: file.name,
+        date: new Date().toISOString().slice(0, 10),
+        size: `${Math.round(file.size / 1024)} KB`
+      };
+      setUploadedAgreements([...uploadedAgreements, newAgreement]);
+      // Reset input
+      e.target.value = '';
+    }
+  }
+
+  function removeAgreement(index: number) {
+    if (confirm("Remove this agreement document?")) {
+      setUploadedAgreements(uploadedAgreements.filter((_, i) => i !== index));
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-xl font-semibold">System Settings</h2>
 
+      {/* Legal Agreements Section */}
+      <div className="rounded-2xl border bg-white p-4">
+        <h3 className="font-semibold mb-3">Legal Agreements & Documents</h3>
+        <p className="text-sm text-slate-600 mb-4">
+          Upload your company's vehicle shuttle agreements, liability waivers, and other legal documents. 
+          These will be available for customers to review and sign before service.
+        </p>
+
+        {/* Upload Button */}
+        <div className="mb-4">
+          <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 cursor-pointer">
+            📄 Upload Agreement
+            <input 
+              type="file" 
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+          <p className="text-xs text-slate-500 mt-2">Accepted formats: PDF, DOC, DOCX</p>
+        </div>
+
+        {/* Uploaded Documents List */}
+        <div className="border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-700">
+              <tr>
+                <th className="text-left font-semibold px-4 py-2">Document Name</th>
+                <th className="text-left font-semibold px-4 py-2">Upload Date</th>
+                <th className="text-left font-semibold px-4 py-2">Size</th>
+                <th className="text-left font-semibold px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {uploadedAgreements.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    No agreements uploaded yet. Upload your first agreement above.
+                  </td>
+                </tr>
+              ) : (
+                uploadedAgreements.map((doc, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="px-4 py-3 font-medium">{doc.name}</td>
+                    <td className="px-4 py-3 text-slate-600">{doc.date}</td>
+                    <td className="px-4 py-3 text-slate-600">{doc.size}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button className="text-blue-600 hover:text-blue-800 text-sm">View</button>
+                        <button 
+                          onClick={() => removeAgreement(idx)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Other Settings */}
       <div className="rounded-2xl border bg-white p-4 space-y-4">
         <div>
           <h3 className="font-semibold mb-2">Capacity Settings</h3>

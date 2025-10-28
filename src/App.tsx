@@ -1792,16 +1792,23 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
   
-  // Get the Sunday before (or on) the first day of month
-  const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
-  const gridStart = new Date(firstDayOfMonth);
+  // Start from today if viewing current month and today is in this month, otherwise start from first of month
+  const todayDate = new Date(currentDate + 'T00:00:00');
+  const isCurrentMonth = todayDate.getMonth() === month && todayDate.getFullYear() === year;
+  
+  // Determine the actual start date (today if current month, otherwise first of month)
+  const actualStartDate = isCurrentMonth && todayDate > firstDayOfMonth ? todayDate : firstDayOfMonth;
+  
+  // Get the Sunday before (or on) the actual start date
+  const firstDayOfWeek = actualStartDate.getDay(); // 0 = Sunday
+  const gridStart = new Date(actualStartDate);
   gridStart.setDate(gridStart.getDate() - firstDayOfWeek);
   const gridStartISO = gridStart.toISOString().slice(0, 10);
   
   // Calculate number of days to show (always show complete weeks)
   const lastDayOfWeek = lastDayOfMonth.getDay();
-  const daysInMonth = lastDayOfMonth.getDate();
-  const totalDays = firstDayOfWeek + daysInMonth + (6 - lastDayOfWeek);
+  const daysFromStartToEndOfMonth = lastDayOfMonth.getDate() - actualStartDate.getDate() + 1;
+  const totalDays = firstDayOfWeek + daysFromStartToEndOfMonth + (6 - lastDayOfWeek);
   
   const allDays = daysArray(gridStartISO, totalDays);
 
@@ -1858,22 +1865,14 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
           const available = capacity.total - capacity.used;
           const isOverbooked = capacity.used > capacity.total;
           
-          // Hide past days for cleaner view
-          if (isPast) {
-            return (
-              <div 
-                key={dayISO} 
-                className="bg-slate-50 min-h-[140px]"
-              />
-            );
-          }
-          
           return (
             <div 
               key={dayISO} 
               data-calendar-date={dayISO}
               className={`p-2 min-h-[140px] transition-all ${
-                !isCurrentMonth 
+                isPast
+                  ? 'bg-slate-100 opacity-40'
+                  : !isCurrentMonth 
                   ? 'bg-slate-50 opacity-50' 
                   : isOverbooked 
                   ? 'bg-red-600 border-2 border-red-800 shadow-lg' 

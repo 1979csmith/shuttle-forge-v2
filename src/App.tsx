@@ -1467,31 +1467,58 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
         const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
         
+        // Calculate days from today
+        const daysFromToday = daysBetween(currentDate, date);
+        
+        // Check if any jobs on this day have unassigned drivers
+        const hasUnassignedDriver = dateJobs.some(job => 
+          job.legs.some(leg => leg.date === date && (!leg.driverId || leg.driverId === 'Unassigned'))
+        );
+        
+        // Determine status color
+        let statusColor = '';
+        let statusBadge = null;
+        
+        if (isOverbooked || hasUnassignedDriver) {
+          // Red: Overbooked or not scheduled
+          statusColor = 'bg-red-600 border-red-800 text-white shadow-lg';
+          if (hasUnassignedDriver && !isOverbooked) {
+            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">⚠️ UNASSIGNED</span>;
+          } else if (isOverbooked) {
+            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">OVERBOOKED</span>;
+          }
+        } else if (daysFromToday >= 0 && daysFromToday <= 3) {
+          // Orange: Moving in the next 3 days
+          statusColor = 'bg-orange-500 border-orange-700 text-white shadow-md';
+          if (isToday) {
+            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-orange-600 text-xs font-bold">TODAY</span>;
+          } else {
+            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-orange-600 text-xs font-bold">{daysFromToday}d</span>;
+          }
+        } else {
+          // Green: All good, scheduled
+          statusColor = 'bg-green-600 border-green-700 text-white';
+          statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-green-700 text-xs font-bold">✓ SCHEDULED</span>;
+        }
+        
         return (
           <div key={date} className="space-y-3">
             {/* Date Header */}
             <div 
               data-date={date}
-              className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
-                isOverbooked
-                  ? 'bg-red-600 border-red-800 text-white shadow-lg'
-                  : isToday 
-                  ? 'bg-blue-100 border-blue-400 text-blue-900' 
-                  : 'bg-slate-100 border-slate-300 text-slate-800'
-              }`}
+              className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${statusColor}`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-bold text-lg flex items-center gap-2">
-                    {isOverbooked && <span className="text-xl">⚠️</span>}
+                    {(isOverbooked || hasUnassignedDriver) && <span className="text-xl">⚠️</span>}
                     {dayName}
                   </div>
                   <div className="text-sm">{dateStr}</div>
                 </div>
                 <div className="text-sm font-semibold flex items-center gap-2">
                   {dateJobs.length} {dateJobs.length === 1 ? 'job' : 'jobs'}
-                  {isToday && <span className="ml-2 px-2 py-1 rounded-full bg-blue-600 text-white text-xs">TODAY</span>}
-                  {isOverbooked && <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">OVERBOOKED</span>}
+                  {statusBadge}
                 </div>
               </div>
             </div>

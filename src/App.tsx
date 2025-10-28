@@ -1158,7 +1158,17 @@ function RouteDispatchPage() {
             }
           }, 100);
         } else {
-          // In Calendar view: scroll to the calendar day cell
+          // In Calendar view: navigate to the correct month first, then scroll
+          const clickedDate = new Date(date + 'T00:00:00');
+          const currentViewDate = new Date(calendarViewDate + 'T00:00:00');
+          
+          // Check if we need to change months
+          if (clickedDate.getMonth() !== currentViewDate.getMonth() || 
+              clickedDate.getFullYear() !== currentViewDate.getFullYear()) {
+            setCalendarViewDate(date);
+          }
+          
+          // Scroll to the calendar day cell
           setTimeout(() => {
             const dayCell = document.querySelector(`[data-calendar-date="${date}"]`);
             if (dayCell) {
@@ -1169,7 +1179,7 @@ function RouteDispatchPage() {
                 dayCell.classList.remove('ring-4', 'ring-red-500', 'ring-offset-2');
               }, 2000);
             }
-          }, 100);
+          }, 200); // Slightly longer delay to allow month change
         }
       }} />
 

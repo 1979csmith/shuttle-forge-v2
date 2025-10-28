@@ -224,6 +224,17 @@ const DEMO_DATA: Record<string, { currentDate: string; drivers: Driver[]; jobs: 
           { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-31", depart: "11:30", arrive: "17:00", driverId: "D1" },
         ],
       },
+      // URGENT RED CARD DEMO - Trip ending tomorrow (Oct 28) with NO driver assigned
+      {
+        id: "J-1099",
+        car: { owner: "URGENT-Wilson", makeModel: "Ford F-150", plate: "ID-URG999", year: 2021, color: "Red" },
+        tripPutIn: "2025-10-22",
+        tripTakeOut: "2025-10-28",  // Trip ends TOMORROW!
+        legs: [
+          { leg: "A", startLocation: "Corn Creek", endLocation: "Stanley Yard", date: "2025-10-27", depart: "14:00", arrive: "17:30", driverId: "" },  // NO DRIVER
+          { leg: "B", startLocation: "Stanley Yard", endLocation: "Hammer Creek", date: "2025-10-28", depart: "08:00", arrive: "13:30", driverId: "" },  // NO DRIVER - URGENT!
+        ],
+      },
       {
         id: "J-1010",
         car: { owner: "Jackson", makeModel: "Nissan Frontier", plate: "MT-H90123G", year: 2020, color: "Red" },
@@ -1456,6 +1467,25 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
             <option value={60}>60 days</option>
             <option value={90}>90 days</option>
           </select>
+        </div>
+      </div>
+
+      {/* Vehicle Status Legend */}
+      <div className="p-4 bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center gap-6 text-xs flex-wrap">
+          <div className="font-semibold text-slate-700">Vehicle Status:</div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded bg-red-50 border-2 border-red-300"></div>
+            <span className="text-slate-600">🔴 Trip ending in 3 days with no assigned driver</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded bg-orange-50 border-2 border-orange-300"></div>
+            <span className="text-slate-600">🟠 Scheduled move in next 3 days</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded bg-green-50 border-2 border-green-300"></div>
+            <span className="text-slate-600">🟢 Scheduled move 3+ days out - all good</span>
+          </div>
         </div>
       </div>
       

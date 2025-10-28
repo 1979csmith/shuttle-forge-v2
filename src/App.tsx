@@ -1111,11 +1111,11 @@ function RouteDispatchPage() {
             <div className="mt-3 flex items-center gap-4 text-xs border-t pt-3">
               <div className="font-semibold text-slate-700">Legend:</div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400"></div>
+                <div className="w-4 h-4 rounded bg-blue-200 border-2 border-blue-500"></div>
                 <span className="text-slate-600">Leg A (Launch → Stanley)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-400"></div>
+                <div className="w-4 h-4 rounded bg-purple-200 border-2 border-purple-500"></div>
                 <span className="text-slate-600">Leg B (Stanley → Take-out)</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -1129,7 +1129,7 @@ function RouteDispatchPage() {
             <div className="mt-3 flex items-center gap-4 text-xs border-t pt-3">
               <div className="font-semibold text-slate-700">Legend:</div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded bg-slate-100 border-2 border-slate-400"></div>
+                <div className="w-4 h-4 rounded bg-slate-200 border-2 border-slate-500"></div>
                 <span className="text-slate-600">Single Delivery</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -1995,14 +1995,14 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
   const isLegA = leg.leg === "A";
   const isLegB = leg.leg === "B";
   
-  // Always use leg colors for two-leg jobs, use slate for single-leg
+  // Use stronger, more vibrant colors with better contrast
   let legColorCls = "";
   if (isLegA) {
-    legColorCls = "bg-blue-100 text-blue-900 border-blue-400";
+    legColorCls = "bg-blue-200 text-blue-950 border-blue-500";
   } else if (isLegB) {
-    legColorCls = "bg-purple-100 text-purple-900 border-purple-400";
+    legColorCls = "bg-purple-200 text-purple-950 border-purple-500";
   } else {
-    legColorCls = "bg-slate-100 text-slate-900 border-slate-400";
+    legColorCls = "bg-slate-200 text-slate-900 border-slate-500";
   }
   
   // Add urgency border styling
@@ -2014,10 +2014,10 @@ function VehicleCard({ job, legIndex, currentDate, onClick, onDragStart, onDragE
     legColorCls = legColorCls.replace(/border-\w+-\d+/, "border-amber-500 border-2");
   }
 
-  // Left border stripe color
-  const leftBorderColor = isLegA ? 'border-l-blue-500' : 
-                          isLegB ? 'border-l-purple-500' : 
-                          'border-l-slate-500';
+  // Left border stripe color - thicker and more vibrant
+  const leftBorderColor = isLegA ? 'border-l-blue-600' : 
+                          isLegB ? 'border-l-purple-600' : 
+                          'border-l-slate-600';
 
   return (
     <button

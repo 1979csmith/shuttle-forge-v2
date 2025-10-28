@@ -1527,15 +1527,11 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
             {dateJobs.map(job => {
         const isExpanded = expandedJobs.has(job.id);
         const mostUrgentLeg = getMostUrgentLeg(job);
-        const urgentDays = daysBetween(currentDate, mostUrgentLeg.date);
-        const cardBgClass = urgentDays <= 0 ? 'bg-red-50 border-red-200' : 
-                           urgentDays <= 3 ? 'bg-amber-50 border-amber-200' : 
-                           'bg-white border-slate-200';
 
         return (
           <div 
             key={job.id} 
-            className={`rounded-xl border-2 ${cardBgClass} p-4 cursor-pointer hover:shadow-md transition-all`}
+            className="rounded-xl border-2 bg-white border-slate-300 p-4 cursor-pointer hover:shadow-md transition-all"
             onClick={() => toggleExpand(job.id)}
           >
             {/* Collapsed View */}

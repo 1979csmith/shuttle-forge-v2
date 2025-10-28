@@ -1197,7 +1197,7 @@ function RouteDispatchPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
-          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} overbookedDays={overbookedDays} onUpdateLocation={updateJobLegLocation} />}
+          {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} onUpdateLocation={updateJobLegLocation} />}
           {mode === 'calendar' && (
             <>
               {/* Month Navigation */}
@@ -1370,10 +1370,9 @@ function WarningsPanel({ issues, overbookedDays, onDateClick }: {
 
 /* ---------------- List View ---------------- */
 
-function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: { 
+function ListMode({ jobs, currentDate, onUpdateLocation }: { 
   jobs: Job[]; 
   currentDate: string;
-  overbookedDays: string[];
   onUpdateLocation: (jobId: string, legIndex: number, field: 'startLocation' | 'endLocation', value: string) => void;
 }) {
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
@@ -1492,55 +1491,31 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
       {/* Jobs grouped by date */}
       {jobsByDate.map(({ date, jobs: dateJobs }) => {
         const isToday = date === currentDate;
-        const isOverbooked = overbookedDays.includes(date);
         const dateObj = new Date(date + 'T00:00:00');
         const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
         
-        // Check if any jobs on this day have unassigned drivers
-        const hasUnassignedDriver = dateJobs.some(job => 
-          job.legs.some(leg => leg.date === date && (!leg.driverId || leg.driverId === 'Unassigned'))
-        );
-        
-        // Determine date header status - only show red for critical issues
-        let statusColor = '';
-        let statusBadge = null;
-        
-        if (isOverbooked || hasUnassignedDriver) {
-          // Red: Critical issues only
-          statusColor = 'bg-red-600 border-red-800 text-white shadow-lg';
-          if (hasUnassignedDriver && !isOverbooked) {
-            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">⚠️ UNASSIGNED</span>;
-          } else if (isOverbooked) {
-            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">OVERBOOKED</span>;
-          }
-        } else if (isToday) {
-          // Blue for today
-          statusColor = 'bg-blue-600 border-blue-700 text-white';
-          statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-blue-600 text-xs font-bold">TODAY</span>;
-        } else {
-          // Neutral for normal days
-          statusColor = 'bg-slate-100 border-slate-300 text-slate-800';
-        }
-        
         return (
           <div key={date} className="space-y-3">
-            {/* Date Header */}
+            {/* Date Header - Neutral styling, no status colors */}
             <div 
               data-date={date}
-              className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${statusColor}`}
+              className={`sticky top-0 z-10 px-4 py-3 rounded-xl border-2 ${
+                isToday 
+                  ? 'bg-blue-100 border-blue-400 text-blue-900' 
+                  : 'bg-slate-100 border-slate-300 text-slate-800'
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-lg flex items-center gap-2">
-                    {(isOverbooked || hasUnassignedDriver) && <span className="text-xl">⚠️</span>}
+                  <div className="font-bold text-lg">
                     {dayName}
                   </div>
                   <div className="text-sm">{dateStr}</div>
                 </div>
                 <div className="text-sm font-semibold flex items-center gap-2">
                   {dateJobs.length} {dateJobs.length === 1 ? 'job' : 'jobs'}
-                  {statusBadge}
+                  {isToday && <span className="ml-2 px-2 py-1 rounded-full bg-blue-600 text-white text-xs">TODAY</span>}
                 </div>
               </div>
             </div>

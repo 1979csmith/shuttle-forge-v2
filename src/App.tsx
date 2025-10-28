@@ -1230,11 +1230,9 @@ function RouteDispatchPage() {
 
         {/* Sidebar */}
         <div className="space-y-4 sticky top-6 self-start">
-          {mode === 'calendar' && (
+          <CarsMovedTodayPanel jobs={jobs} currentDate={currentDate} />
+          {mode === 'calendar' && selectedJob && (
             <JobDetailsPanel job={selectedJob} currentDate={currentDate} onClose={() => setSelectedJob(null)} />
-          )}
-          {mode === 'list' && (
-            <CarsMovedTodayPanel jobs={jobs} currentDate={currentDate} />
           )}
         </div>
       </div>

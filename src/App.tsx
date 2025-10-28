@@ -1826,20 +1826,33 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
     return map;
   }, [jobs, allDays]);
 
-  // Calculate capacity per day
+  // Detect if this is a two-leg route
+  const isTwoLegRoute = jobs.some(job => job.legs.some(leg => leg.leg === 'A' || leg.leg === 'B'));
+  
+  // Calculate capacity per day - separate counts for Leg A and Leg B
   const capacityByDay = useMemo(() => {
-    const map = new Map<string, { used: number; total: number }>();
+    const map = new Map<string, { used: number; total: number; legAUsed: number; legBUsed: number }>();
     const TOTAL_DRIVERS = 8; // Max shuttle driver capacity
     
     for (const day of allDays) {
-      // Count legs scheduled for this day
+      // Count legs scheduled for this day, separated by leg type
       let used = 0;
+      let legAUsed = 0;
+      let legBUsed = 0;
+      
       for (const job of jobs) {
         for (const leg of job.legs) {
-          if (leg.date === day) used++;
+          if (leg.date === day) {
+            used++;
+            if (leg.leg === 'A') {
+              legAUsed++;
+            } else if (leg.leg === 'B') {
+              legBUsed++;
+            }
+          }
         }
       }
-      map.set(day, { used, total: TOTAL_DRIVERS });
+      map.set(day, { used, total: TOTAL_DRIVERS, legAUsed, legBUsed });
     }
     return map;
   }, [allDays, jobs]);
@@ -1861,7 +1874,7 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
           const dayDateObj = new Date(dayISO + "T00:00:00");
           const dayNum = dayDateObj.getDate();
           const isCurrentMonth = dayDateObj.getMonth() === month;
-          const capacity = capacityByDay.get(dayISO) || { used: 0, total: 8 };
+          const capacity = capacityByDay.get(dayISO) || { used: 0, total: 8, legAUsed: 0, legBUsed: 0 };
           const available = capacity.total - capacity.used;
           const isOverbooked = capacity.used > capacity.total;
           
@@ -1896,13 +1909,30 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
                   {isToday && <span className="ml-1 text-[10px]">Today</span>}
                   {isOverbooked && <span className="ml-1 text-[9px] px-1 py-0.5 bg-white text-red-600 rounded font-bold">OVER</span>}
                 </div>
-                <div className={`text-[10px] font-semibold ${
-                  isOverbooked ? 'text-white' :
-                  available === 0 ? 'text-amber-600' : 
-                  'text-slate-500'
-                }`}>
-                  {capacity.used}/{capacity.total}
-                </div>
+                {isTwoLegRoute ? (
+                  <div className="flex flex-col gap-0.5 text-[9px] font-semibold">
+                    <div className={`flex items-center gap-1 ${
+                      isOverbooked ? 'text-white' : 'text-blue-700'
+                    }`}>
+                      <span className="px-1 py-0.5 bg-blue-200 text-blue-800 rounded">A</span>
+                      <span>{capacity.legAUsed}/{capacity.total}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${
+                      isOverbooked ? 'text-white' : 'text-purple-700'
+                    }`}>
+                      <span className="px-1 py-0.5 bg-purple-200 text-purple-800 rounded">B</span>
+                      <span>{capacity.legBUsed}/{capacity.total}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`text-[10px] font-semibold ${
+                    isOverbooked ? 'text-white' :
+                    available === 0 ? 'text-amber-600' : 
+                    'text-slate-500'
+                  }`}>
+                    {capacity.used}/{capacity.total}
+                  </div>
+                )}
               </div>
 
               {/* Vehicle cards for this day */}

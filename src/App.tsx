@@ -1474,16 +1474,16 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
         <div className="flex items-center gap-6 text-xs flex-wrap">
           <div className="font-semibold text-slate-700">Vehicle Status:</div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-red-50 border-2 border-red-300"></div>
-            <span className="text-slate-600">🔴 Trip ending in 3 days with no assigned driver</span>
+            <div className="w-5 h-5 rounded bg-red-100 border-4 border-red-400"></div>
+            <span className="text-slate-600 font-medium">🔴 Trip ending in 3 days with no assigned driver</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-orange-50 border-2 border-orange-300"></div>
-            <span className="text-slate-600">🟠 Scheduled move in next 3 days</span>
+            <div className="w-5 h-5 rounded bg-orange-100 border-4 border-orange-400"></div>
+            <span className="text-slate-600 font-medium">🟠 Scheduled move in next 3 days</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-green-50 border-2 border-green-300"></div>
-            <span className="text-slate-600">🟢 Scheduled move 3+ days out - all good</span>
+            <div className="w-5 h-5 rounded bg-green-100 border-4 border-green-400"></div>
+            <span className="text-slate-600 font-medium">🟢 Scheduled move 3+ days out - all good</span>
           </div>
         </div>
       </div>
@@ -1537,19 +1537,19 @@ function ListMode({ jobs, currentDate, onUpdateLocation }: {
         let cardBgClass = '';
         if (!hasDriver || needsUrgentMove) {
           // Red: No driver assigned or urgent (trip ending tomorrow/today)
-          cardBgClass = 'bg-red-50 border-red-300';
+          cardBgClass = 'bg-red-100 border-red-400 border-4';
         } else if (daysUntilMove >= 0 && daysUntilMove <= 3) {
           // Light orange: Scheduled in next 3 days
-          cardBgClass = 'bg-orange-50 border-orange-300';
+          cardBgClass = 'bg-orange-100 border-orange-400 border-4';
         } else {
           // Green: Scheduled 3+ days out, all good
-          cardBgClass = 'bg-green-50 border-green-300';
+          cardBgClass = 'bg-green-100 border-green-400 border-4';
         }
 
         return (
           <div 
             key={job.id} 
-            className={`rounded-xl border-2 ${cardBgClass} p-4 cursor-pointer hover:shadow-md transition-all`}
+            className={`rounded-xl ${cardBgClass} p-4 cursor-pointer hover:shadow-md transition-all`}
             onClick={() => toggleExpand(job.id)}
           >
             {/* Collapsed View */}

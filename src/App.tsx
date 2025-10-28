@@ -1040,6 +1040,9 @@ function RouteDispatchPage() {
   const [draggedItem, setDraggedItem] = useState<{ job: Job; legIndex: number } | null>(null);
   const [dropWarning, setDropWarning] = useState<string | null>(null);
   
+  // Calendar month navigation - start with current month
+  const [calendarViewDate, setCalendarViewDate] = useState<string>(currentDate);
+  
   // Function to update a job's leg date
   const updateJobLegDate = (jobId: string, legIndex: number, newDate: string) => {
     setJobs(prevJobs => prevJobs.map(job => {
@@ -1175,16 +1178,53 @@ function RouteDispatchPage() {
         <div className="lg:col-span-2 space-y-6">
           {mode === 'list' && <ListMode jobs={jobs} currentDate={currentDate} overbookedDays={overbookedDays} onUpdateLocation={updateJobLegLocation} />}
           {mode === 'calendar' && (
-            <CalendarView
-              jobs={jobs}
-              currentDate={currentDate}
-              onSelectJob={setSelectedJob}
-              draggedItem={draggedItem}
-              onDragStart={setDraggedItem}
-              onDragEnd={() => setDraggedItem(null)}
-              onDropWarning={setDropWarning}
-              onUpdateJobLegDate={updateJobLegDate}
-            />
+            <>
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
+                <button
+                  onClick={() => {
+                    const date = new Date(calendarViewDate + 'T00:00:00');
+                    date.setMonth(date.getMonth() - 1);
+                    setCalendarViewDate(date.toISOString().slice(0, 10));
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition flex items-center gap-2"
+                >
+                  <span>←</span> Previous Month
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="text-lg font-bold text-slate-800">
+                    {new Date(calendarViewDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                  </div>
+                  <button
+                    onClick={() => setCalendarViewDate(currentDate)}
+                    className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition border border-blue-200"
+                  >
+                    Today
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    const date = new Date(calendarViewDate + 'T00:00:00');
+                    date.setMonth(date.getMonth() + 1);
+                    setCalendarViewDate(date.toISOString().slice(0, 10));
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition flex items-center gap-2"
+                >
+                  Next Month <span>→</span>
+                </button>
+              </div>
+              <CalendarView
+                jobs={jobs}
+                currentDate={currentDate}
+                viewDate={calendarViewDate}
+                onSelectJob={setSelectedJob}
+                draggedItem={draggedItem}
+                onDragStart={setDraggedItem}
+                onDragEnd={() => setDraggedItem(null)}
+                onDropWarning={setDropWarning}
+                onUpdateJobLegDate={updateJobLegDate}
+              />
+            </>
           )}
         </div>
 
@@ -1742,9 +1782,10 @@ function handleDrop(
 }
 
 /** Calendar grid (7 columns x N weeks). Cards render on their leg date(s) */
-function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate }: {
+function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, onDragStart, onDragEnd, onDropWarning, onUpdateJobLegDate }: {
   jobs: Job[];
   currentDate: string;
+  viewDate: string;
   onSelectJob: (job: Job) => void;
   draggedItem: { job: Job; legIndex: number } | null;
   onDragStart: (item: { job: Job; legIndex: number }) => void;
@@ -1752,10 +1793,27 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
   onDropWarning: (warning: string | null) => void;
   onUpdateJobLegDate: (jobId: string, legIndex: number, newDate: string) => void;
 }) {
-  // Show a 3-week window centered around current week for dispatching
-  const weekStart = startOfWeek(currentDate);            // Sunday
-  const gridStart = addDaysISO(weekStart, -7);           // one week before
-  const allDays = daysArray(gridStart, 21);              // 3 weeks
+  // Display full month calendar based on viewDate
+  const viewDateObj = new Date(viewDate + 'T00:00:00');
+  const year = viewDateObj.getFullYear();
+  const month = viewDateObj.getMonth();
+  
+  // Get first day of the month
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+  
+  // Get the Sunday before (or on) the first day of month
+  const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+  const gridStart = new Date(firstDayOfMonth);
+  gridStart.setDate(gridStart.getDate() - firstDayOfWeek);
+  const gridStartISO = gridStart.toISOString().slice(0, 10);
+  
+  // Calculate number of days to show (always show complete weeks)
+  const lastDayOfWeek = lastDayOfMonth.getDay();
+  const daysInMonth = lastDayOfMonth.getDate();
+  const totalDays = firstDayOfWeek + daysInMonth + (6 - lastDayOfWeek);
+  
+  const allDays = daysArray(gridStartISO, totalDays);
 
   // bucket jobs by day - show a card for EACH leg on its scheduled day
   const byDay = useMemo(() => {
@@ -1798,11 +1856,13 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
         ))}
       </div>
 
-      {/* Rows (3 weeks) */}
+      {/* Rows (full month) */}
       <div className="grid grid-cols-7 gap-px bg-slate-200">
         {allDays.map((dayISO) => {
           const isToday = dayISO === currentDate;
-          const dayNum = new Date(dayISO + "T00:00:00").getDate();
+          const dayDateObj = new Date(dayISO + "T00:00:00");
+          const dayNum = dayDateObj.getDate();
+          const isCurrentMonth = dayDateObj.getMonth() === month;
           const capacity = capacityByDay.get(dayISO) || { used: 0, total: 8 };
           const available = capacity.total - capacity.used;
           const isOverbooked = capacity.used > capacity.total;
@@ -1812,7 +1872,9 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
               key={dayISO} 
               data-calendar-date={dayISO}
               className={`p-2 min-h-[140px] transition-all ${
-                isOverbooked 
+                !isCurrentMonth 
+                  ? 'bg-slate-50 opacity-50' 
+                  : isOverbooked 
                   ? 'bg-red-600 border-2 border-red-800 shadow-lg' 
                   : isToday 
                   ? 'bg-blue-50 border-2 border-blue-300' 
@@ -1821,7 +1883,9 @@ function CalendarView({ jobs, currentDate, onSelectJob, draggedItem, onDragStart
             >
               <div className="flex items-center justify-between mb-1">
                 <div className={`text-xs font-medium flex items-center gap-1 ${
-                  isOverbooked 
+                  !isCurrentMonth
+                    ? 'text-slate-400'
+                    : isOverbooked 
                     ? 'text-white font-bold' 
                     : isToday 
                     ? 'text-blue-600 font-bold' 

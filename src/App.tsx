@@ -1712,14 +1712,6 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
 
 /* ---------------- Calendar View ---------------- */
 
-function startOfWeek(isoStr: string): string {
-  const d = new Date(isoStr + "T00:00:00");
-  const day = d.getDay(); // 0 Sun ... 6 Sat
-  const s = new Date(d);
-  s.setDate(d.getDate() - day); // move to Sunday
-  return s.toISOString().slice(0, 10);
-}
-
 function daysArray(startISO: string, count: number): string[] {
   const arr: string[] = [];
   for (let i = 0; i < count; i++) {

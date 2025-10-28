@@ -1852,12 +1852,23 @@ function CalendarView({ jobs, currentDate, viewDate, onSelectJob, draggedItem, o
       <div className="grid grid-cols-7 gap-px bg-slate-200">
         {allDays.map((dayISO) => {
           const isToday = dayISO === currentDate;
+          const isPast = dayISO < currentDate;
           const dayDateObj = new Date(dayISO + "T00:00:00");
           const dayNum = dayDateObj.getDate();
           const isCurrentMonth = dayDateObj.getMonth() === month;
           const capacity = capacityByDay.get(dayISO) || { used: 0, total: 8 };
           const available = capacity.total - capacity.used;
           const isOverbooked = capacity.used > capacity.total;
+          
+          // Hide past days for cleaner view
+          if (isPast) {
+            return (
+              <div 
+                key={dayISO} 
+                className="bg-slate-50 min-h-[140px]"
+              />
+            );
+          }
           
           return (
             <div 

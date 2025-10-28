@@ -1467,38 +1467,30 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
         const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
         
-        // Calculate days from today
-        const daysFromToday = daysBetween(currentDate, date);
-        
         // Check if any jobs on this day have unassigned drivers
         const hasUnassignedDriver = dateJobs.some(job => 
           job.legs.some(leg => leg.date === date && (!leg.driverId || leg.driverId === 'Unassigned'))
         );
         
-        // Determine status color
+        // Determine date header status - only show red for critical issues
         let statusColor = '';
         let statusBadge = null;
         
         if (isOverbooked || hasUnassignedDriver) {
-          // Red: Overbooked or not scheduled
+          // Red: Critical issues only
           statusColor = 'bg-red-600 border-red-800 text-white shadow-lg';
           if (hasUnassignedDriver && !isOverbooked) {
             statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">⚠️ UNASSIGNED</span>;
           } else if (isOverbooked) {
             statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-red-600 text-xs font-bold">OVERBOOKED</span>;
           }
-        } else if (daysFromToday >= 0 && daysFromToday <= 3) {
-          // Orange: Moving in the next 3 days
-          statusColor = 'bg-orange-500 border-orange-700 text-white shadow-md';
-          if (isToday) {
-            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-orange-600 text-xs font-bold">TODAY</span>;
-          } else {
-            statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-orange-600 text-xs font-bold">{daysFromToday}d</span>;
-          }
+        } else if (isToday) {
+          // Blue for today
+          statusColor = 'bg-blue-600 border-blue-700 text-white';
+          statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-blue-600 text-xs font-bold">TODAY</span>;
         } else {
-          // Green: All good, scheduled
-          statusColor = 'bg-green-600 border-green-700 text-white';
-          statusBadge = <span className="ml-2 px-2 py-1 rounded-full bg-white text-green-700 text-xs font-bold">✓ SCHEDULED</span>;
+          // Neutral for normal days
+          statusColor = 'bg-slate-100 border-slate-300 text-slate-800';
         }
         
         return (
@@ -1527,11 +1519,32 @@ function ListMode({ jobs, currentDate, overbookedDays, onUpdateLocation }: {
             {dateJobs.map(job => {
         const isExpanded = expandedJobs.has(job.id);
         const mostUrgentLeg = getMostUrgentLeg(job);
+        
+        // Determine vehicle card color based on scheduling status
+        const daysUntilMove = daysBetween(currentDate, mostUrgentLeg.date);
+        const hasDriver = mostUrgentLeg.driverId && mostUrgentLeg.driverId !== 'Unassigned';
+        
+        // Check if trip is ending soon and car needs to be moved urgently
+        const tripEndDate = job.tripTakeOut;
+        const daysUntilTripEnd = daysBetween(currentDate, tripEndDate);
+        const needsUrgentMove = daysUntilTripEnd <= 1 && !hasDriver;
+        
+        let cardBgClass = '';
+        if (!hasDriver || needsUrgentMove) {
+          // Red: No driver assigned or urgent (trip ending tomorrow/today)
+          cardBgClass = 'bg-red-50 border-red-300';
+        } else if (daysUntilMove >= 0 && daysUntilMove <= 3) {
+          // Light orange: Scheduled in next 3 days
+          cardBgClass = 'bg-orange-50 border-orange-300';
+        } else {
+          // Green: Scheduled 3+ days out, all good
+          cardBgClass = 'bg-green-50 border-green-300';
+        }
 
         return (
           <div 
             key={job.id} 
-            className="rounded-xl border-2 bg-white border-slate-300 p-4 cursor-pointer hover:shadow-md transition-all"
+            className={`rounded-xl border-2 ${cardBgClass} p-4 cursor-pointer hover:shadow-md transition-all`}
             onClick={() => toggleExpand(job.id)}
           >
             {/* Collapsed View */}
